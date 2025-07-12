@@ -17,8 +17,8 @@ class DonorDashboard extends StatelessWidget {
                 Tab(icon: Icon(Icons.history), text: 'History'),
                 Tab(icon: Icon(Icons.person), text: 'Profile'),
               ],
-              indicatorColor: Colors.red,
-              labelColor: Colors.red,
+              indicatorColor: Color.fromARGB(255, 238, 23, 8),
+              labelColor: Color.fromARGB(255, 235, 22, 7),
               unselectedLabelColor: Colors.black,
             ),
             Expanded(
@@ -53,10 +53,10 @@ class OverviewTab extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Text(
-            'Welcome back, CHOCOS !\nThank you for being a life-saver. Your donations make a real difference.',
+            'Welcome back, SAVIOURS !\nThank you for being a life-saver. Your donations make a real difference.',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
