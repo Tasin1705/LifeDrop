@@ -46,14 +46,14 @@ class HeroSection extends StatelessWidget {
         children: [
           const Text(
             'Save Lives with',
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 33, fontWeight: FontWeight.bold),
           ),
           const Text(
             'LifeDrop',
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              color: Colors.red,
+              color: Color.fromARGB(255, 245, 23, 8),
             ),
           ),
           const SizedBox(height: 16),
