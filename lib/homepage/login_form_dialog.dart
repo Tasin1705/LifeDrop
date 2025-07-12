@@ -76,7 +76,7 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                     children: [
                       const CircleAvatar(
                         radius: 26,
-                        backgroundColor: Colors.redAccent,
+                        backgroundColor: Color.fromARGB(255, 244, 2, 2),
                         child: Text(
                           'C',
                           style: TextStyle(fontSize: 22, color: Colors.white),
