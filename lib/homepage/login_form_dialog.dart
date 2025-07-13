@@ -134,7 +134,7 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                           child: const Text(
                             'Login',
                             style: TextStyle(
-                              color: Color.fromARGB(255, 0, 0, 0),
+                              color: Color.fromARGB(255, 255, 255, 255),
                             ),
                           ),
                         ),

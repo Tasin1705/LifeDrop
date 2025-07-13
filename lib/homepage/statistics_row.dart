@@ -6,32 +6,53 @@ class StatisticsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildStat('25,000+', 'Lives Saved'),
-          _buildStat('15,000+', 'Active Donors'),
-          _buildStat('500+', 'Partner Hospitals'),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: Center(
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 32, // space between items horizontally
+          runSpacing: 16, // space between lines when wrapped
+          children: const [
+            _StatCard(number: '25,000+', label: 'Lives Saved'),
+            _StatCard(number: '15,000+', label: 'Active Donors'),
+            _StatCard(number: '500+', label: 'Partner Hospitals'),
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildStat(String number, String label) {
-    return Column(
-      children: [
-        Text(
-          number,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.red,
+class _StatCard extends StatelessWidget {
+  final String number;
+  final String label;
+
+  const _StatCard({required this.number, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 110, // fixed width ensures consistent sizing and wrap support
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            number,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+            ),
+            textAlign: TextAlign.center,
           ),
-        ),
-        SizedBox(height: 4),
-        Text(label),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }
