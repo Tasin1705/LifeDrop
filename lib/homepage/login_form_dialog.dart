@@ -11,6 +11,7 @@ class LoginFormDialog extends StatefulWidget {
 class _LoginFormDialogState extends State<LoginFormDialog> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  String selectedAccountType = 'Donor'; // Default value
 
   Future<void> _login() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -18,8 +19,7 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
 
     // ignore: use_build_context_synchronously
     Navigator.pop(context);
-    // ignore: use_build_context_synchronously
-    Navigator.pushReplacementNamed(context, '/transitionSplash');
+    Navigator.pushNamed(context, '/dashboard');
   }
 
   @override
@@ -60,7 +60,7 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                         ),
                         SizedBox(height: 8),
                         Text(
-                          '“Every blood donor is a lifesaver”',
+                          ' “Every blood donor is a lifesaver” ',
                           style: TextStyle(color: Colors.white70),
                         ),
                       ],
@@ -68,6 +68,7 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                   ),
                 ),
 
+              // Right Panel (Form)
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
@@ -94,6 +95,8 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                         ),
                       ),
                       const SizedBox(height: 24),
+
+                      // Email field
                       TextField(
                         controller: emailController,
                         decoration: InputDecoration(
