@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginFormDialog extends StatefulWidget {
   const LoginFormDialog({super.key});
@@ -11,9 +12,14 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  void _login() {
+  Future<void> _login() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', true);
+
+    // ignore: use_build_context_synchronously
     Navigator.pop(context);
-    Navigator.pushNamed(context, '/dashboard');
+    // ignore: use_build_context_synchronously
+    Navigator.pushReplacementNamed(context, '/transitionSplash');
   }
 
   @override
@@ -25,12 +31,11 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: screenWidth < 400 ? screenWidth : 400, // Prevent overflow
+          maxWidth: screenWidth < 400 ? screenWidth : 400,
         ),
         child: IntrinsicHeight(
           child: Row(
             children: [
-              // Left Panel (optional)
               if (screenWidth > 400)
                 Expanded(
                   child: Container(
@@ -53,10 +58,9 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-
                         SizedBox(height: 8),
                         Text(
-                          ' “Every blood donor is a lifesaver” ',
+                          '“Every blood donor is a lifesaver”',
                           style: TextStyle(color: Colors.white70),
                         ),
                       ],
@@ -64,7 +68,6 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                   ),
                 ),
 
-              // Right Panel (Form)
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
@@ -76,7 +79,7 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                     children: [
                       const CircleAvatar(
                         radius: 26,
-                        backgroundColor: Color.fromARGB(255, 244, 2, 2),
+                        backgroundColor: Colors.red,
                         child: Text(
                           'C',
                           style: TextStyle(fontSize: 22, color: Colors.white),
@@ -91,8 +94,6 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                         ),
                       ),
                       const SizedBox(height: 24),
-
-                      // Email field
                       TextField(
                         controller: emailController,
                         decoration: InputDecoration(
@@ -104,8 +105,6 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                         ),
                       ),
                       const SizedBox(height: 16),
-
-                      // Password field
                       TextField(
                         controller: passwordController,
                         obscureText: true,
@@ -118,8 +117,6 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                         ),
                       ),
                       const SizedBox(height: 24),
-
-                      // Login button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -133,9 +130,7 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                           ),
                           child: const Text(
                             'Login',
-                            style: TextStyle(
-                              color: Color.fromARGB(255, 255, 255, 255),
-                            ),
+                            style: TextStyle(color: Colors.white),
                           ),
                         ),
                       ),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'hero_section.dart';
 import 'statistics_row.dart';
 import 'why_choose_section.dart';
-import 'blood_types_section.dart'; // Add this import for BloodTypesSection
 import 'live_tracking_card.dart';
 
 class HomePage extends StatelessWidget {
@@ -19,7 +18,6 @@ class HomePage extends StatelessWidget {
             LiveTrackingCard(), // Add the LiveTrackingCard here
             StatisticsRow(),
             WhyChooseSection(),
-            BloodTypesSection(),
           ],
         ),
       ),
