@@ -22,6 +22,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => const SplashScreen(),
         '/home': (context) => const HomePage(),
         '/dashboard': (context) => const DonorDashboard(),
+        '/hospital_dashboard': (context) => const HospitalDashboard(),
       },
     );
   }
