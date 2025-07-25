@@ -16,9 +16,9 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
     Navigator.pop(context);
     // Navigate based on account type
     if (selectedAccountType == 'Donor') {
-      Navigator.pushNamed(context, '/donor-dashboard');
+      Navigator.pushNamed(context, '/dashboard');
     } else {
-      Navigator.pushNamed(context, '/hospital-dashboard');
+      Navigator.pushNamed(context, '/hospital_dashboard');
     }
   }
 
