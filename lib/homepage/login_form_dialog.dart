@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginFormDialog extends StatefulWidget {
   const LoginFormDialog({super.key});
@@ -13,13 +12,14 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
   final TextEditingController passwordController = TextEditingController();
   String selectedAccountType = 'Donor'; // Default value
 
-  Future<void> _login() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', true);
-
-    // ignore: use_build_context_synchronously
+  void _login() {
     Navigator.pop(context);
-    Navigator.pushNamed(context, '/dashboard');
+    // Navigate based on account type
+    if (selectedAccountType == 'Donor') {
+      Navigator.pushNamed(context, '/donor-dashboard');
+    } else {
+      Navigator.pushNamed(context, '/hospital-dashboard');
+    }
   }
 
   @override
@@ -60,15 +60,13 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                         ),
                         SizedBox(height: 8),
                         Text(
-                          ' “Every blood donor is a lifesaver” ',
+                          ' "Every blood donor is a lifesaver" ',
                           style: TextStyle(color: Colors.white70),
                         ),
                       ],
                     ),
                   ),
                 ),
-
-              // Right Panel (Form)
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
@@ -80,7 +78,7 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                     children: [
                       const CircleAvatar(
                         radius: 26,
-                        backgroundColor: Colors.red,
+                        backgroundColor: Color.fromARGB(255, 244, 2, 2),
                         child: Text(
                           'C',
                           style: TextStyle(fontSize: 22, color: Colors.white),
@@ -96,6 +94,34 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                       ),
                       const SizedBox(height: 24),
 
+                      // Account Type Selector
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade400),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedAccountType,
+                            isExpanded: true,
+                            icon: const Icon(Icons.person),
+                            items: ['Donor', 'Hospital']
+                                .map((type) => DropdownMenuItem(
+                                      value: type,
+                                      child: Text(type),
+                                    ))
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                selectedAccountType = value!;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
                       // Email field
                       TextField(
                         controller: emailController,
@@ -108,6 +134,8 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                         ),
                       ),
                       const SizedBox(height: 16),
+
+                      // Password field
                       TextField(
                         controller: passwordController,
                         obscureText: true,
@@ -120,6 +148,8 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                         ),
                       ),
                       const SizedBox(height: 24),
+
+                      // Login button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -133,7 +163,9 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                           ),
                           child: const Text(
                             'Login',
-                            style: TextStyle(color: Colors.white),
+                            style: TextStyle(
+                              color: Color.fromARGB(255, 255, 255, 255),
+                            ),
                           ),
                         ),
                       ),
