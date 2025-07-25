@@ -1,4 +1,5 @@
 import 'package:first_app/hospital_dashboard.dart';
+import 'package:first_app/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:first_app/homepage/home_page.dart';
 import 'package:first_app/dashboard/donor_dashboard.dart';

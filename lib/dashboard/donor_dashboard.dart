@@ -1,3 +1,4 @@
+import 'package:first_app/dashboard/overview_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:first_app/dashboard/schedule_tab.dart';
 import 'package:first_app/dashboard/history_tab.dart';
