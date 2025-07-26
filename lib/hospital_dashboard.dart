@@ -1,3 +1,4 @@
+import 'package:first_app/blood_request/blood_request_form.dart';
 import 'package:flutter/material.dart';
 
 class HospitalDashboard extends StatelessWidget {
@@ -31,19 +32,21 @@ class HospitalDashboard extends StatelessWidget {
             ),
           ],
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            // Show dialog to create new blood request
-            showDialog(
-              context: context,
-              builder: (context) => const NewBloodRequestDialog(),
-            );
-          },
-          backgroundColor: Colors.red,
-          child: const Icon(Icons.add),
-        ),
+     floatingActionButton: FloatingActionButton(
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BloodRequestForm(userType: 'hospital'),
       ),
     );
+  },
+  backgroundColor: Colors.red,
+  tooltip: 'Request for Blood',
+  child: const Icon(Icons.add),
+),
+        ),
+      );
   }
 }
 

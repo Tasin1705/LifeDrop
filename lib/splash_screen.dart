@@ -19,6 +19,7 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _logoController;
   late AnimationController _textController;
   late Animation<double> _logoScale;
+  // ignore: unused_field
   late Animation<double> _textOpacity;
 
   String username = "User";
