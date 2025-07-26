@@ -10,10 +10,16 @@ class LoginFormDialog extends StatefulWidget {
 class _LoginFormDialogState extends State<LoginFormDialog> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  String selectedAccountType = 'Donor'; // Default value
 
   void _login() {
     Navigator.pop(context);
-    Navigator.pushNamed(context, '/dashboard');
+    // Navigate based on account type
+    if (selectedAccountType == 'Donor') {
+      Navigator.pushNamed(context, '/dashboard');
+    } else {
+      Navigator.pushNamed(context, '/hospital_dashboard');
+    }
   }
 
   @override
@@ -25,12 +31,11 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: screenWidth < 400 ? screenWidth : 400, // Prevent overflow
+          maxWidth: screenWidth < 400 ? screenWidth : 400,
         ),
         child: IntrinsicHeight(
           child: Row(
             children: [
-              // Left Panel (optional)
               if (screenWidth > 400)
                 Expanded(
                   child: Container(
@@ -53,18 +58,15 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-
                         SizedBox(height: 8),
                         Text(
-                          ' “Every blood donor is a lifesaver” ',
+                          ' "Every blood donor is a lifesaver" ',
                           style: TextStyle(color: Colors.white70),
                         ),
                       ],
                     ),
                   ),
                 ),
-
-              // Right Panel (Form)
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
@@ -91,6 +93,34 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                         ),
                       ),
                       const SizedBox(height: 24),
+
+                      // Account Type Selector
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade400),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedAccountType,
+                            isExpanded: true,
+                            icon: const Icon(Icons.person),
+                            items: ['Donor', 'Hospital']
+                                .map((type) => DropdownMenuItem(
+                                      value: type,
+                                      child: Text(type),
+                                    ))
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                selectedAccountType = value!;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
                       // Email field
                       TextField(

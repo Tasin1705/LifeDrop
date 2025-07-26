@@ -1,3 +1,4 @@
+import 'package:first_app/dashboard/overview_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:first_app/dashboard/schedule_tab.dart';
 import 'package:first_app/dashboard/history_tab2.dart';
@@ -59,7 +60,7 @@ class OverviewTab extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Text(
-            'Welcome back, CHOCOS!\nThank you for being a life-saver. Your donations make a real difference.',
+            'Welcome back, CHOCOS !\nThank you for being a life-saver. Your donations make a real difference.',
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -167,7 +168,6 @@ class _DashboardCard extends StatelessWidget {
       child: Column(
         children: [
           Icon(icon, size: 32),
-          const SizedBox(height: 8),
           Text(
             value,
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -210,20 +210,18 @@ class _AppointmentCard extends StatelessWidget {
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           Text(date),
-          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
                   const Icon(Icons.location_on, size: 16),
-                  const SizedBox(width: 4),
                   Text(location),
                 ],
               ),
               Chip(
                 label: Text(status),
-                backgroundColor: statusColor.withOpacity(0.1), // ⚠️ Deprecated warning, still works
+                backgroundColor: statusColor.withOpacity(0.1),
                 labelStyle: TextStyle(color: statusColor),
               ),
             ],

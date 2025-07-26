@@ -15,7 +15,7 @@ class OverviewTab extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Text(
-            'Welcome back, SAVIOUR !\nThank you for being a life-saver. Your donations make a real difference.',
+            'Welcome back, CHOCOS !\nThank you for being a life-saver. Your donations make a real difference.',
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -25,39 +25,47 @@ class OverviewTab extends StatelessWidget {
         ),
         const SizedBox(height: 24),
 
-        // 🧱 Dashboard Cards (2 per row)
+        // 🔳 Dashboard Cards (Two rows)
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: const [
-            _DashboardCard(
-              icon: Icons.favorite,
-              value: '3',
-              label: 'Total Donations',
-              color: Color(0xFFFFCDD2),
+            Expanded(
+              child: DashboardCard(
+                icon: Icons.favorite,
+                value: '3',
+                label: 'Total Donations',
+                color: Color(0xFFFFCDD2),
+              ),
             ),
-            _DashboardCard(
-              icon: Icons.bloodtype,
-              value: 'O+',
-              label: 'Blood Type',
-              color: Color(0xFFBBDEFB),
+            SizedBox(width: 16),
+            Expanded(
+              child: DashboardCard(
+                icon: Icons.bloodtype,
+                value: 'O+',
+                label: 'Blood Type',
+                color: Color(0xFFBBDEFB),
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: const [
-            _DashboardCard(
-              icon: Icons.calendar_today,
-              value: '2',
-              label: 'Upcoming',
-              color: Color(0xFFC8E6C9),
+            Expanded(
+              child: DashboardCard(
+                icon: Icons.calendar_today,
+                value: '2',
+                label: 'Upcoming',
+                color: Color(0xFFC8E6C9),
+              ),
             ),
-            _DashboardCard(
-              icon: Icons.emoji_events,
-              value: '2',
-              label: 'Badges Earned',
-              color: Color(0xFFFFF9C4),
+            SizedBox(width: 16),
+            Expanded(
+              child: DashboardCard(
+                icon: Icons.emoji_events,
+                value: '2',
+                label: 'Badges Earned',
+                color: Color(0xFFFFF9C4),
+              ),
             ),
           ],
         ),
@@ -69,8 +77,7 @@ class OverviewTab extends StatelessWidget {
         ),
         const SizedBox(height: 16),
 
-        // 📅 Appointments
-        _AppointmentCard(
+        const AppointmentCard(
           center: 'City Blood Center',
           date: '2024-01-20 at 10:00 AM',
           location: '123 Health St, Downtown',
@@ -78,7 +85,7 @@ class OverviewTab extends StatelessWidget {
           statusColor: Colors.green,
         ),
         const SizedBox(height: 12),
-        _AppointmentCard(
+        const AppointmentCard(
           center: 'Memorial Hospital',
           date: '2024-03-15 at 2:00 PM',
           location: '456 Medical Ave, Midtown',
@@ -96,14 +103,14 @@ class OverviewTab extends StatelessWidget {
         Row(
           children: const [
             Expanded(
-              child: _AchievementCard(
+              child: AchievementCard(
                 title: 'First Donation',
                 color: Color(0xFFFFF9C4),
               ),
             ),
             SizedBox(width: 16),
             Expanded(
-              child: _AchievementCard(
+              child: AchievementCard(
                 title: 'Regular Donor',
                 color: Color(0xFFBBDEFB),
               ),
@@ -115,24 +122,24 @@ class OverviewTab extends StatelessWidget {
   }
 }
 
-// 📊 Dashboard Stat Card
-class _DashboardCard extends StatelessWidget {
+// ✅ Public reusable Dashboard Card
+class DashboardCard extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
   final Color color;
 
-  const _DashboardCard({
+  const DashboardCard({
     required this.icon,
     required this.value,
     required this.label,
     required this.color,
+    super.key,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 150,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color,
@@ -153,20 +160,21 @@ class _DashboardCard extends StatelessWidget {
   }
 }
 
-// 📅 Appointment Card with Icon
-class _AppointmentCard extends StatelessWidget {
+// ✅ Public reusable Appointment Card
+class AppointmentCard extends StatelessWidget {
   final String center;
   final String date;
   final String location;
   final String status;
   final Color statusColor;
 
-  const _AppointmentCard({
+  const AppointmentCard({
     required this.center,
     required this.date,
     required this.location,
     required this.status,
     required this.statusColor,
+    super.key,
   });
 
   @override
@@ -188,7 +196,6 @@ class _AppointmentCard extends StatelessWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
@@ -234,12 +241,12 @@ class _AppointmentCard extends StatelessWidget {
   }
 }
 
-// 🏅 Achievement Card
-class _AchievementCard extends StatelessWidget {
+// ✅ Public reusable Achievement Card
+class AchievementCard extends StatelessWidget {
   final String title;
   final Color color;
 
-  const _AchievementCard({required this.title, required this.color});
+  const AchievementCard({required this.title, required this.color, super.key});
 
   @override
   Widget build(BuildContext context) {
