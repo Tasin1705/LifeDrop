@@ -15,7 +15,7 @@ class OverviewTab extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Text(
-            'Welcome back, CHOCOS!\nThank you for being a life-saver. Your donations make a real difference.',
+            'Welcome back, CHOCOS !\nThank you for being a life-saver. Your donations make a real difference.',
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,
