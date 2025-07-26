@@ -17,7 +17,7 @@ class OverviewTab extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Text(
-            'Welcome back !\nThank you for being a life-saver. Your donations make a real difference.',
+            'Welcome back Savior !\nThank you for being a life-saver. Your donations make a real difference.',
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -120,24 +120,7 @@ class OverviewTab extends StatelessWidget {
         ),
 
         const SizedBox(height: 40),
-
-        ElevatedButton.icon(
-          icon: const Icon(Icons.bloodtype),
-          label: const Text('Request Blood'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const BloodRequestForm(userType: 'donor'),
-              ),
-            );
-          },
-        ),
+        
       ],
     );
   }

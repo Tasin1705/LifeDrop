@@ -27,7 +27,7 @@ class DonorDashboard extends StatelessWidget {
                 labelColor: Colors.red,
                 unselectedLabelColor: Colors.black,
               ),
-              Expanded(
+              const Expanded(
                 child: TabBarView(
                   children: [
                     OverviewTab(),
@@ -41,11 +41,14 @@ class DonorDashboard extends StatelessWidget {
           ),
         ),
 
-        // 🔴 This adds a floating button to request blood
+        // ✅ Floating Action Button to request blood
         floatingActionButton: FloatingActionButton.extended(
           backgroundColor: Colors.red,
           icon: const Icon(Icons.bloodtype),
-          label: const Text('Request Blood'),
+          label: const Text(
+            'Request Blood',
+            style: TextStyle(color: Colors.white),
+          ),
           onPressed: () {
             Navigator.push(
               context,
