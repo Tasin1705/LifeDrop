@@ -1,12 +1,9 @@
-import 'package:first_app/blood_request/blood_request_form.dart';
 import 'package:flutter/material.dart';
 import 'package:first_app/dashboard/schedule_tab.dart';
 import 'package:first_app/dashboard/history_tab2.dart';
 import 'package:first_app/dashboard/profile_tab.dart';
-import 'package:first_app/homepage/statistics_row.dart';
-
-
-   // ✅ KEEP
+import 'package:first_app/dashboard/overview_tab.dart';
+import 'package:first_app/blood_request/blood_request_form.dart';
 
 class DonorDashboard extends StatelessWidget {
   const DonorDashboard({super.key});
@@ -18,8 +15,8 @@ class DonorDashboard extends StatelessWidget {
       child: Scaffold(
         body: SafeArea(
           child: Column(
-            children: const [
-              TabBar(
+            children: [
+              const TabBar(
                 tabs: [
                   Tab(icon: Icon(Icons.favorite), text: 'Overview'),
                   Tab(icon: Icon(Icons.calendar_today), text: 'Schedule'),
@@ -42,6 +39,21 @@ class DonorDashboard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+
+        // 🔴 This adds a floating button to request blood
+        floatingActionButton: FloatingActionButton.extended(
+          backgroundColor: Colors.red,
+          icon: const Icon(Icons.bloodtype),
+          label: const Text('Request Blood'),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const BloodRequestForm(userType: 'donor'),
+              ),
+            );
+          },
         ),
       ),
     );

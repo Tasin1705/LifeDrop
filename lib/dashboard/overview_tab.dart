@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:first_app/blood_request/blood_request_form.dart';
+
 
 class OverviewTab extends StatelessWidget {
   const OverviewTab({super.key});
@@ -15,7 +17,7 @@ class OverviewTab extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Text(
-            'Welcome back, CHOCOS !\nThank you for being a life-saver. Your donations make a real difference.',
+            'Welcome back !\nThank you for being a life-saver. Your donations make a real difference.',
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -25,7 +27,6 @@ class OverviewTab extends StatelessWidget {
         ),
         const SizedBox(height: 24),
 
-        // 🔳 Dashboard Cards (Two rows)
         Row(
           children: const [
             Expanded(
@@ -117,12 +118,32 @@ class OverviewTab extends StatelessWidget {
             ),
           ],
         ),
+
+        const SizedBox(height: 40),
+
+        ElevatedButton.icon(
+          icon: const Icon(Icons.bloodtype),
+          label: const Text('Request Blood'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const BloodRequestForm(userType: 'donor'),
+              ),
+            );
+          },
+        ),
       ],
     );
   }
 }
 
-// ✅ Public reusable Dashboard Card
+// ✅ Dashboard Card Widget
 class DashboardCard extends StatelessWidget {
   final IconData icon;
   final String value;
@@ -130,11 +151,11 @@ class DashboardCard extends StatelessWidget {
   final Color color;
 
   const DashboardCard({
+    super.key,
     required this.icon,
     required this.value,
     required this.label,
     required this.color,
-    super.key,
   });
 
   @override
@@ -160,7 +181,7 @@ class DashboardCard extends StatelessWidget {
   }
 }
 
-// ✅ Public reusable Appointment Card
+// ✅ Appointment Card Widget
 class AppointmentCard extends StatelessWidget {
   final String center;
   final String date;
@@ -169,12 +190,12 @@ class AppointmentCard extends StatelessWidget {
   final Color statusColor;
 
   const AppointmentCard({
+    super.key,
     required this.center,
     required this.date,
     required this.location,
     required this.status,
     required this.statusColor,
-    super.key,
   });
 
   @override
@@ -182,17 +203,9 @@ class AppointmentCard extends StatelessWidget {
     Icon? statusIcon;
 
     if (status.toLowerCase() == 'confirmed') {
-      statusIcon = const Icon(
-        Icons.check_circle,
-        color: Colors.green,
-        size: 18,
-      );
+      statusIcon = const Icon(Icons.check_circle, color: Colors.green, size: 18);
     } else if (status.toLowerCase() == 'pending') {
-      statusIcon = const Icon(
-        Icons.hourglass_bottom,
-        color: Colors.orange,
-        size: 18,
-      );
+      statusIcon = const Icon(Icons.hourglass_bottom, color: Colors.orange, size: 18);
     }
 
     return Container(
@@ -204,10 +217,7 @@ class AppointmentCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            center,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          Text(center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           Text(date),
           const SizedBox(height: 4),
           Row(
@@ -226,10 +236,7 @@ class AppointmentCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     status,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(color: statusColor, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -241,12 +248,12 @@ class AppointmentCard extends StatelessWidget {
   }
 }
 
-// ✅ Public reusable Achievement Card
+// ✅ Achievement Card Widget
 class AchievementCard extends StatelessWidget {
   final String title;
   final Color color;
 
-  const AchievementCard({required this.title, required this.color, super.key});
+  const AchievementCard({super.key, required this.title, required this.color});
 
   @override
   Widget build(BuildContext context) {
