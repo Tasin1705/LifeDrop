@@ -19,7 +19,10 @@ class ScheduleTab extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: ElevatedButton(
             onPressed: () {
-              // TODO: Add logic to create a new appointment
+              showDialog(
+                context: context,
+                builder: (context) => const DonorFormDialog(),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -164,6 +167,69 @@ class _ScheduleCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// Add this new widget below your existing code
+class DonorFormDialog extends StatefulWidget {
+  const DonorFormDialog({super.key});
+
+  @override
+  State<DonorFormDialog> createState() => _DonorFormDialogState();
+}
+
+class _DonorFormDialogState extends State<DonorFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+  String name = '';
+  String bloodGroup = '';
+  String contact = '';
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Donor's Information"),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                decoration: const InputDecoration(labelText: 'Name'),
+                onChanged: (val) => setState(() => name = val),
+                validator: (val) => val == null || val.isEmpty ? 'Enter name' : null,
+              ),
+              TextFormField(
+                decoration: const InputDecoration(labelText: 'Blood Group'),
+                onChanged: (val) => setState(() => bloodGroup = val),
+                validator: (val) => val == null || val.isEmpty ? 'Enter blood group' : null,
+              ),
+              TextFormField(
+                decoration: const InputDecoration(labelText: 'Contact'),
+                keyboardType: TextInputType.phone,
+                onChanged: (val) => setState(() => contact = val),
+                validator: (val) => val == null || val.isEmpty ? 'Enter contact' : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              // You can handle the form submission here
+              Navigator.of(context).pop();
+            }
+          },
+          child: const Text('Submit'),
+        ),
+      ],
     );
   }
 }
