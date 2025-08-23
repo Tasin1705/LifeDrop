@@ -129,7 +129,7 @@ class HistoryTab extends StatelessWidget {
               ),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
