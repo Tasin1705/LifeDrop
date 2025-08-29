@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:first_app/homepage/registration_form_dialog.dart';
-import 'package:first_app/homepage/login_form_dialog.dart';
+import 'registration_form_dialog.dart';
+import 'login_form_dialog.dart';
 
 class HeroSection extends StatelessWidget {
   const HeroSection({super.key});

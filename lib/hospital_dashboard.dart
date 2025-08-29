@@ -1,4 +1,3 @@
-import 'package:first_app/blood_request/blood_request_form.dart';
 import 'package:flutter/material.dart';
 
 class HospitalDashboard extends StatefulWidget {
@@ -47,7 +46,7 @@ class _HospitalDashboardState extends State<HospitalDashboard> {
           DonorsRecordTab(),
         ],
       ),
-      
+
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
@@ -77,6 +76,7 @@ class _HospitalDashboardState extends State<HospitalDashboard> {
     );
   }
 }
+
 class HospitalOverviewTab extends StatelessWidget {
   const HospitalOverviewTab({super.key});
 
@@ -85,32 +85,32 @@ class HospitalOverviewTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-         Container(
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: [Colors.red.shade600, Colors.red.shade400],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      borderRadius: BorderRadius.circular(12),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.red.withOpacity(0.3),
-          blurRadius: 8,
-          offset: const Offset(0, 4),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.red.shade600, Colors.red.shade400],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const Text(
+            'Welcome back, City Hospital!\nManage blood donations and requests efficiently.',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
-      ],
-    ),
-    child: const Text(
-      'Welcome back, City Hospital!\nManage blood donations and requests efficiently.',
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-      ),
-    ),
-  ),
 
         const SizedBox(height: 24),
         Row(
@@ -152,7 +152,7 @@ class HospitalOverviewTab extends StatelessWidget {
           statusColor: const Color.fromARGB(255, 255, 0, 0),
         ),
 
-         _RequestCard(
+        _RequestCard(
           bloodType: 'O+',
           units: '2',
           urgency: 'High',
@@ -162,7 +162,7 @@ class HospitalOverviewTab extends StatelessWidget {
           statusColor: const Color.fromARGB(255, 255, 0, 0),
         ),
 
-         _RequestCard(
+        _RequestCard(
           bloodType: 'A+',
           units: '2',
           urgency: 'Low',
@@ -236,7 +236,7 @@ class DonationRequestsTab extends StatelessWidget {
           statusColor: const Color.fromARGB(255, 255, 0, 0),
           showActions: true,
         ),
-         const SizedBox(height: 24),
+        const SizedBox(height: 24),
         _RequestCard(
           bloodType: 'A-',
           units: '4',
@@ -247,7 +247,7 @@ class DonationRequestsTab extends StatelessWidget {
           statusColor: const Color.fromARGB(255, 245, 32, 4),
           showActions: true,
         ),
-         const SizedBox(height: 24),
+        const SizedBox(height: 24),
         _RequestCard(
           bloodType: 'O+',
           units: '3',
@@ -258,8 +258,7 @@ class DonationRequestsTab extends StatelessWidget {
           statusColor: const Color.fromARGB(255, 248, 5, 5),
           showActions: true,
         ),
-      ]
-      ,
+      ],
     );
   }
 }
@@ -313,17 +312,10 @@ class HospitalProfileTab extends StatelessWidget {
           child: ElevatedButton.icon(
             onPressed: () {
               // Navigate to homepage and remove all previous routes
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/',
-                (route) => false,
-              );
+              Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
             },
             icon: const Icon(Icons.logout, color: Colors.white),
-            label: const Text(
-              'Logout',
-              style: TextStyle(color: Colors.white),
-            ),
+            label: const Text('Logout', style: TextStyle(color: Colors.white)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -356,7 +348,7 @@ class _DonorRecordCard extends StatelessWidget {
     required this.address,
   });
 
-   @override
+  @override
   Widget build(BuildContext context) {
     return Card(
       elevation: 4,
@@ -461,10 +453,10 @@ class _NewBloodRequestDialogState extends State<NewBloodRequestDialog> {
                 value: selectedBloodType,
                 decoration: const InputDecoration(labelText: 'Blood Type'),
                 items: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
-                    .map((type) => DropdownMenuItem(
-                          value: type,
-                          child: Text(type),
-                        ))
+                    .map(
+                      (type) =>
+                          DropdownMenuItem(value: type, child: Text(type)),
+                    )
                     .toList(),
                 onChanged: (value) => setState(() => selectedBloodType = value),
               ),
@@ -481,10 +473,10 @@ class _NewBloodRequestDialogState extends State<NewBloodRequestDialog> {
                 value: selectedUrgency,
                 decoration: const InputDecoration(labelText: 'Urgency Level'),
                 items: ['Low', 'Medium', 'High']
-                    .map((level) => DropdownMenuItem(
-                          value: level,
-                          child: Text(level),
-                        ))
+                    .map(
+                      (level) =>
+                          DropdownMenuItem(value: level, child: Text(level)),
+                    )
                     .toList(),
                 onChanged: (value) => setState(() => selectedUrgency = value),
               ),
@@ -504,7 +496,9 @@ class _NewBloodRequestDialogState extends State<NewBloodRequestDialog> {
                         // TODO: Implement request creation
                       }
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                    ),
                     child: const Text('Create Request'),
                   ),
                 ],
@@ -551,10 +545,9 @@ class HospitalProfileDialog extends StatelessWidget {
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: () {
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                  '/',
-                  (route) => false,
-                );
+                Navigator.of(
+                  context,
+                ).pushNamedAndRemoveUntil('/', (route) => false);
               },
               icon: const Icon(Icons.logout, color: Colors.white),
               label: const Text(
@@ -582,26 +575,26 @@ class DonorsRecordTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-      TextField(
-  decoration: InputDecoration(
-    hintText: 'Search donors...',
-    prefixIcon: Icon(Icons.search, color: Colors.red),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: Colors.red.shade200),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: Colors.red, width: 2),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: Colors.red.shade200),
-    ),
-    filled: true,
-    fillColor: Colors.red.shade50,
-  ),
-),
+        TextField(
+          decoration: InputDecoration(
+            hintText: 'Search donors...',
+            prefixIcon: Icon(Icons.search, color: Colors.red),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red.shade200),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red, width: 2),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red.shade200),
+            ),
+            filled: true,
+            fillColor: Colors.red.shade50,
+          ),
+        ),
         const SizedBox(height: 24),
         _DonorRecordCard(
           name: 'John Doe',
@@ -625,7 +618,6 @@ class DonorsRecordTab extends StatelessWidget {
   }
 }
 
-
 class _DashboardCard extends StatelessWidget {
   final IconData icon;
   final String value;
@@ -639,7 +631,7 @@ class _DashboardCard extends StatelessWidget {
     required this.color,
   });
 
-    @override
+  @override
   Widget build(BuildContext context) {
     return Container(
       width: 110,
@@ -666,7 +658,7 @@ class _DashboardCard extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontSize: 20, 
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.red.shade700,
             ),
@@ -674,10 +666,7 @@ class _DashboardCard extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.red.shade900,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.red.shade900),
           ),
         ],
       ),
@@ -755,8 +744,8 @@ class _RequestCard extends StatelessWidget {
                         color: urgency == 'High'
                             ? Colors.red
                             : urgency == 'Medium'
-                                ? Colors.orange
-                                : Colors.green,
+                            ? Colors.orange
+                            : Colors.green,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -764,7 +753,10 @@ class _RequestCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
@@ -784,17 +776,11 @@ class _RequestCard extends StatelessWidget {
               children: [
                 const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
                 const SizedBox(width: 4),
-                Text(
-                  date,
-                  style: const TextStyle(color: Colors.grey),
-                ),
+                Text(date, style: const TextStyle(color: Colors.grey)),
                 const Spacer(),
                 Icon(Icons.people, size: 16, color: Colors.grey.shade700),
                 const SizedBox(width: 4),
-                Text(
-                  donors,
-                  style: const TextStyle(color: Colors.grey),
-                ),
+                Text(donors, style: const TextStyle(color: Colors.grey)),
               ],
             ),
             if (showActions) ...[
@@ -962,10 +948,7 @@ class _DonorListItem extends StatelessWidget {
             backgroundColor: Colors.red,
             padding: const EdgeInsets.symmetric(horizontal: 16),
           ),
-          child: const Text(
-            'Contact',
-            style: TextStyle(color: Colors.white),
-          ),
+          child: const Text('Contact', style: TextStyle(color: Colors.white)),
         ),
       ),
     );
@@ -976,12 +959,9 @@ class _ProfileInfoCard extends StatelessWidget {
   final String title;
   final List<Map<String, String>> items;
 
-  const _ProfileInfoCard({
-    required this.title,
-    required this.items,
-  });
+  const _ProfileInfoCard({required this.title, required this.items});
 
-   @override
+  @override
   Widget build(BuildContext context) {
     return Card(
       elevation: 4,
@@ -1010,22 +990,24 @@ class _ProfileInfoCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            ...items.map((item) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        item.keys.first,
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                      Text(
-                        item.values.first,
-                        style: const TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                    ],
-                  ),
-                )),
+            ...items.map(
+              (item) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      item.keys.first,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    Text(
+                      item.values.first,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

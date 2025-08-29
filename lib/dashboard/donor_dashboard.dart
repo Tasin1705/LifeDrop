@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:first_app/dashboard/schedule_tab.dart';
-import 'package:first_app/dashboard/history_tab2.dart';
-import 'package:first_app/dashboard/profile_tab.dart';
-import 'package:first_app/dashboard/overview_tab.dart';
-import 'package:first_app/blood_request/blood_request_form.dart';
+import 'schedule_tab.dart';
+import 'history_tab2.dart';
+import 'profile_tab.dart';
+import 'overview_tab.dart';
+import '../blood_request/blood_request_form.dart';
 
 class DonorDashboard extends StatelessWidget {
   const DonorDashboard({super.key});

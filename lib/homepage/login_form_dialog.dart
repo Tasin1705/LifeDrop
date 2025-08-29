@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginFormDialog extends StatefulWidget {
   const LoginFormDialog({super.key});
@@ -10,15 +12,111 @@ class LoginFormDialog extends StatefulWidget {
 class _LoginFormDialogState extends State<LoginFormDialog> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  String selectedAccountType = 'Donor'; // Default value
 
-  void _login() {
-    Navigator.pop(context);
-    // Navigate based on account type
-    if (selectedAccountType == 'Donor') {
-      Navigator.pushNamed(context, '/dashboard');
-    } else {
-      Navigator.pushNamed(context, '/hospital_dashboard');
+  bool isLoading = false;
+  String? errorMessage;
+
+  Future<void> _login() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+            email: emailController.text.trim(),
+            password: passwordController.text,
+          );
+
+      final user = userCredential.user;
+
+      if (user == null) {
+        setState(() => errorMessage = "Login failed: user not found.");
+        return;
+      }
+
+      // Check if email is verified
+      if (!user.emailVerified) {
+        setState(
+          () => errorMessage = "Please verify your email before logging in.",
+        );
+
+        // Show resend verification option
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Email Not Verified'),
+            content: const Text(
+              'Please check your email and click the verification link. Would you like to resend the verification email?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  try {
+                    await user.sendEmailVerification();
+                    Navigator.pop(context);
+                    setState(
+                      () => errorMessage =
+                          "Verification email sent! Please check your inbox.",
+                    );
+                  } catch (e) {
+                    Navigator.pop(context);
+                    setState(
+                      () => errorMessage =
+                          "Failed to send verification email. Try again later.",
+                    );
+                  }
+                },
+                child: const Text('Resend'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      Navigator.pop(context); // Close the dialog
+
+      // Check user role from Firestore and navigate accordingly
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+        final String role = userData?['role'] ?? 'Donor';
+
+        if (role == 'Hospital') {
+          Navigator.pushReplacementNamed(context, '/hospital_dashboard');
+        } else {
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        }
+      } else {
+        Navigator.pushReplacementNamed(
+          context,
+          '/dashboard',
+        ); // Default to donor dashboard
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        setState(() => errorMessage = 'No account found for that email.');
+      } else if (e.code == 'wrong-password') {
+        setState(() => errorMessage = 'Incorrect password.');
+      } else if (e.code == 'invalid-email') {
+        setState(() => errorMessage = 'Invalid email format.');
+      } else {
+        setState(() => errorMessage = 'Login failed. Please try again.');
+      }
+    } catch (e) {
+      setState(() => errorMessage = 'Unexpected error. Try again later.');
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
@@ -60,7 +158,7 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                         ),
                         SizedBox(height: 8),
                         Text(
-                          ' "Every blood donor is a lifesaver" ',
+                          '"Every blood donor is a lifesaver"',
                           style: TextStyle(color: Colors.white70),
                         ),
                       ],
@@ -76,15 +174,7 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const CircleAvatar(
-                        radius: 26,
-                        backgroundColor: Color.fromARGB(255, 244, 2, 2),
-                        child: Text(
-                          'C',
-                          style: TextStyle(fontSize: 22, color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       const Text(
                         'Welcome Back!',
                         style: TextStyle(
@@ -93,67 +183,39 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                         ),
                       ),
                       const SizedBox(height: 24),
-
-                      // Account Type Selector
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade400),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: selectedAccountType,
-                            isExpanded: true,
-                            icon: const Icon(Icons.person),
-                            items: ['Donor', 'Hospital']
-                                .map((type) => DropdownMenuItem(
-                                      value: type,
-                                      child: Text(type),
-                                    ))
-                                .toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                selectedAccountType = value!;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Email field
                       TextField(
                         controller: emailController,
                         decoration: InputDecoration(
-                          prefixIcon: const Icon(Icons.email_outlined),
-                          hintText: 'E-mail',
+                          prefixIcon: const Icon(Icons.email),
+                          hintText: 'Email',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
-
-                      // Password field
                       TextField(
                         controller: passwordController,
                         obscureText: true,
                         decoration: InputDecoration(
-                          prefixIcon: const Icon(Icons.lock_outline),
+                          prefixIcon: const Icon(Icons.lock),
                           hintText: 'Password',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-
-                      // Login button
+                      const SizedBox(height: 16),
+                      if (errorMessage != null)
+                        Text(
+                          errorMessage!,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _login,
+                          onPressed: isLoading ? null : _login,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red,
                             padding: const EdgeInsets.symmetric(vertical: 14),
@@ -161,12 +223,14 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
                               borderRadius: BorderRadius.circular(24),
                             ),
                           ),
-                          child: const Text(
-                            'Login',
-                            style: TextStyle(
-                              color: Color.fromARGB(255, 255, 255, 255),
-                            ),
-                          ),
+                          child: isLoading
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                              : const Text(
+                                  'Login',
+                                  style: TextStyle(color: Colors.white),
+                                ),
                         ),
                       ),
                     ],

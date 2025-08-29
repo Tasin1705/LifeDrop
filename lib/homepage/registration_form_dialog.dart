@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'login_form_dialog.dart';
 
 class RegistrationFormDialog extends StatefulWidget {
   const RegistrationFormDialog({super.key});
@@ -10,37 +13,168 @@ class RegistrationFormDialog extends StatefulWidget {
 class _RegistrationFormDialogState extends State<RegistrationFormDialog> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController fullNameController = TextEditingController();
-  final TextEditingController ageController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
-  final TextEditingController addressController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController =
-      TextEditingController();
-  final TextEditingController weightController = TextEditingController();
+  final nameController = TextEditingController();
+  final ageController = TextEditingController();
+  final phoneController = TextEditingController();
+  final addressController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
+  final hospitalNameController = TextEditingController();
+  final locationController = TextEditingController();
 
-  String? selectedGender = 'Male';
-  String? selectedBloodGroup = 'A+';
-  String? selectedAccountType = 'Blood Donor';
+  bool isDonor = true;
+  bool showPassword = false;
+  bool showConfirmPassword = false;
+  bool isLoading = false;
+  String? errorMessage;
+  String gender = 'Male';
+  String bloodGroup = 'A+';
+  final bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
-  final List<String> genderOptions = ['Male', 'Female'];
-  final List<String> bloodGroups = [
-    'A+',
-    'A-',
-    'B+',
-    'B-',
-    'AB+',
-    'AB-',
-    'O+',
-    'O-',
-  ];
-  final List<String> accountTypes = ['Blood Donor', 'Hospital'];
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
 
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      Navigator.pop(context);
-      Navigator.pushNamed(context, '/dashboard');
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+    final confirmPassword = confirmPasswordController.text.trim();
+
+    if (password != confirmPassword) {
+      setState(() => errorMessage = "Passwords do not match.");
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      // Validate email format
+      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+        setState(() => errorMessage = "Please enter a valid email address.");
+        return;
+      }
+
+      // Validate password strength
+      if (!RegExp(
+        r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$',
+      ).hasMatch(password)) {
+        setState(
+          () => errorMessage =
+              "Password must be at least 8 characters long and include both letters and numbers.",
+        );
+        return;
+      }
+
+      // Validate phone number format for Bangladesh
+      final phone = phoneController.text.trim();
+      if (!RegExp(r'^(\+880|0)(1[3-9]\d{8})$').hasMatch(phone)) {
+        setState(
+          () => errorMessage =
+              "Please enter a valid Bangladesh phone number (e.g., +8801XXXXXXXXX or 01XXXXXXXXX)",
+        );
+        return;
+      }
+
+      // First create the auth user using FirebaseAuth directly
+      final userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
+
+      final user = userCredential.user;
+
+      if (user != null) {
+        // Send email verification
+        await user.sendEmailVerification();
+
+        if (isDonor) {
+          // Validate age for donors
+          final age = int.tryParse(ageController.text.trim());
+          if (age == null || age < 18 || age > 65) {
+            setState(
+              () => errorMessage = "Age must be between 18 and 65 years.",
+            );
+            await user.delete(); // Delete the created user if validation fails
+            return;
+          }
+
+          // Create donor profile with simplified map approach
+          final userData = <String, dynamic>{
+            'uid': user.uid,
+            'fullName': nameController.text.trim(),
+            'email': email,
+            'role': 'Donor',
+            'bloodType': bloodGroup,
+            'age': ageController.text.trim(),
+            'weight': '',
+            'phone': phone,
+            'address': addressController.text.trim(),
+            'gender': gender,
+            'lastDonation': null,
+            'createdAt': FieldValue.serverTimestamp(),
+            'isAvailable': true,
+            'totalDonations': 0,
+          };
+
+          // Add user data to Firestore directly
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .set(userData);
+        } else {
+          // Create hospital profile with simplified map approach
+          final userData = <String, dynamic>{
+            'uid': user.uid,
+            'fullName': hospitalNameController.text.trim(),
+            'email': email,
+            'role': 'Hospital',
+            'phone': phone,
+            'address': locationController.text.trim(),
+            'licenseNumber': hospitalNameController.text.trim(),
+            'bloodType': null,
+            'age': null,
+            'weight': null,
+            'gender': null,
+            'lastDonation': null,
+            'createdAt': FieldValue.serverTimestamp(),
+          };
+
+          // Add user data to Firestore directly
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .set(userData);
+        }
+
+        if (!mounted) return;
+
+        Navigator.of(context).pop();
+
+        // Show success message
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text('🎉 Congratulations!'),
+            content: const Text(
+              'Your account has been created successfully!\n\nA verification email has been sent to your email address. Please verify your email before logging in.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop(); // Close registration dialog
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => errorMessage = "Registration failed: ${e.toString()}");
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
@@ -53,128 +187,139 @@ class _RegistrationFormDialogState extends State<RegistrationFormDialog> {
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header
+              // ❤️ Blood Quote
+              const Text(
+                '"You don’t have to be a doctor to save lives. Just donate blood."',
+                style: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  color: Colors.red,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 🩸 Custom Toggle
               Row(
                 children: [
-                  Image.asset('assets/lifedrop_logo.png', height: 40),
-                  const SizedBox(width: 12),
                   const Text(
-                    'Join LifeDrop',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              const Divider(),
-              const SizedBox(height: 12),
-
-              _buildTextField(
-                label: 'Full Name *',
-                controller: fullNameController,
-                hint: 'Enter your full name',
-              ),
-              _buildTextField(
-                label: 'Phone Number *',
-                controller: phoneController,
-                hint: '+880 1234567890',
-              ),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildDropdown(
-                      label: 'Blood Type *',
-                      value: selectedBloodGroup,
-                      items: bloodGroups,
-                      onChanged: (val) =>
-                          setState(() => selectedBloodGroup = val),
-                    ),
+                    'Register as:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildTextField(
-                      label: 'Age *',
-                      controller: ageController,
-                      hint: '25',
-                      keyboardType: TextInputType.number,
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30),
+                      color: Colors.grey.shade300,
+                    ),
+                    child: Row(
+                      children: [
+                        _buildToggleOption('Donor', true),
+                        _buildToggleOption('Hospital', false),
+                      ],
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
 
-              _buildTextField(
-                label: 'Weight (kg) *',
-                controller: weightController,
-                hint: '70',
-              ),
-              _buildDropdown(
-                label: 'Account Type',
-                value: selectedAccountType,
-                items: accountTypes,
-                onChanged: (val) => setState(() => selectedAccountType = val),
-              ),
-              _buildTextField(
-                label: 'Email Address *',
-                controller: emailController,
-                hint: 'example@email.com',
+              if (isDonor) ...[
+                _textField(nameController, 'Name *'),
+                _textField(
+                  ageController,
+                  'Age *',
+                  keyboardType: TextInputType.number,
+                ),
+                _genderSelection(),
+                _textField(
+                  phoneController,
+                  'Phone (BD) *',
+                  keyboardType: TextInputType.phone,
+                ),
+                _textField(addressController, 'Address *'),
+                DropdownButtonFormField<String>(
+                  value: bloodGroup,
+                  decoration: const InputDecoration(labelText: 'Blood Group *'),
+                  items: bloodGroups
+                      .map((bg) => DropdownMenuItem(value: bg, child: Text(bg)))
+                      .toList(),
+                  onChanged: (val) => setState(() => bloodGroup = val!),
+                ),
+              ] else ...[
+                _textField(hospitalNameController, 'Hospital Name *'),
+                _textField(locationController, 'Location *'),
+                _textField(
+                  phoneController,
+                  'Phone (BD) *',
+                  keyboardType: TextInputType.phone,
+                ),
+              ],
+
+              _textField(
+                emailController,
+                'Email *',
                 keyboardType: TextInputType.emailAddress,
               ),
-              _buildTextField(
-                label: 'Password *',
-                controller: passwordController,
-                hint: 'Enter password',
-                obscure: true,
+              _passwordField(
+                passwordController,
+                'Password *',
+                showPassword,
+                () {
+                  setState(() => showPassword = !showPassword);
+                },
               ),
-              _buildTextField(
-                label: 'Confirm Password *',
-                controller: confirmPasswordController,
-                hint: 'Repeat password',
-                obscure: true,
+              _passwordField(
+                confirmPasswordController,
+                'Confirm Password *',
+                showConfirmPassword,
+                () {
+                  setState(() => showConfirmPassword = !showConfirmPassword);
+                },
               ),
 
-              const SizedBox(height: 20),
+              if (errorMessage != null)
+                Text(errorMessage!, style: const TextStyle(color: Colors.red)),
+
+              const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _submitForm,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 14,
-                  ),
-                ),
-                child: const Text('Create Account'),
+                onPressed: isLoading ? null : _submitForm,
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        'Register',
+                        style: TextStyle(color: Colors.white),
+                      ),
               ),
-              const SizedBox(height: 10),
-              TextButton(
-                onPressed: () => Navigator.pop(context), // Could open Login
-                child: const Text(
-                  'Already have an account? Sign in',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
+
               const SizedBox(height: 8),
-              const Text.rich(
-                TextSpan(
-                  text: 'By creating an account, you agree to our ',
-                  children: [
-                    TextSpan(
-                      text: 'Terms of Service',
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Already have an account?',
+                    style: TextStyle(color: Colors.black),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const LoginFormDialog(),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.only(left: 4),
+                      minimumSize: const Size(0, 0),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text(
+                      'Login',
                       style: TextStyle(color: Colors.red),
                     ),
-                    TextSpan(text: ' and '),
-                    TextSpan(
-                      text: 'Privacy Policy',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  ],
-                ),
-                textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ],
           ),
@@ -183,67 +328,87 @@ class _RegistrationFormDialogState extends State<RegistrationFormDialog> {
     );
   }
 
-  Widget _buildTextField({
-    required String label,
-    required TextEditingController controller,
-    required String hint,
-    bool obscure = false,
-    TextInputType keyboardType = TextInputType.text,
+  Widget _textField(
+    TextEditingController controller,
+    String labelText, {
+    TextInputType? keyboardType,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          TextFormField(
-            controller: controller,
-            obscureText: obscure,
-            keyboardType: keyboardType,
-            validator: (value) =>
-                value == null || value.isEmpty ? 'Required field' : null,
-            decoration: InputDecoration(
-              hintText: hint,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              suffixIcon: obscure ? const Icon(Icons.visibility_off) : null,
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(labelText: labelText),
+        validator: (val) => val == null || val.isEmpty ? 'Required' : null,
       ),
     );
   }
 
-  Widget _buildDropdown({
-    required String label,
-    required String? value,
-    required List<String> items,
-    required Function(String?) onChanged,
-  }) {
+  Widget _passwordField(
+    TextEditingController controller,
+    String label,
+    bool visible,
+    VoidCallback toggle,
+  ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          DropdownButtonFormField<String>(
-            value: value,
-            onChanged: onChanged,
-            items: items
-                .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-                .toList(),
-            validator: (value) =>
-                value == null ? 'Please select an option' : null,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        controller: controller,
+        obscureText: !visible,
+        decoration: InputDecoration(
+          labelText: label,
+          suffixIcon: IconButton(
+            icon: Icon(visible ? Icons.visibility_off : Icons.visibility),
+            onPressed: toggle,
           ),
-        ],
+        ),
+        validator: (val) =>
+            val == null || val.length < 6 ? 'Minimum 6 characters' : null,
+      ),
+    );
+  }
+
+  Widget _genderSelection() {
+    return Row(
+      children: [
+        Expanded(
+          child: RadioListTile(
+            title: const Text('Male'),
+            value: 'Male',
+            groupValue: gender,
+            onChanged: (val) => setState(() => gender = val!),
+          ),
+        ),
+        Expanded(
+          child: RadioListTile(
+            title: const Text('Female'),
+            value: 'Female',
+            groupValue: gender,
+            onChanged: (val) => setState(() => gender = val!),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildToggleOption(String label, bool value) {
+    bool isSelected = isDonor == value;
+    return GestureDetector(
+      onTap: () => setState(() => isDonor = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.red : Colors.transparent,
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.black87,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }
