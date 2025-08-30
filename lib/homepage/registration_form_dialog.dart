@@ -1,6 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/user_model.dart';
+import '../services/auth_service.dart';
 import 'login_form_dialog.dart';
 
 class RegistrationFormDialog extends StatefulWidget {
@@ -32,12 +33,53 @@ class _RegistrationFormDialogState extends State<RegistrationFormDialog> {
   String bloodGroup = 'A+';
   final bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
+  @override
+  void dispose() {
+    nameController.dispose();
+    ageController.dispose();
+    phoneController.dispose();
+    addressController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    hospitalNameController.dispose();
+    locationController.dispose();
+    super.dispose();
+  }
+
+  bool _validateInputs(String email, String password, String phone) {
+    // Validate email format
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      setState(() => errorMessage = "Please enter a valid email address.");
+      return false;
+    }
+
+    // Validate password strength
+    if (!RegExp(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$').hasMatch(password)) {
+      setState(() => errorMessage =
+          "Password must be at least 8 characters long and include both letters and numbers.");
+      return false;
+    }
+
+    // Validate phone number format for Bangladesh
+    if (!RegExp(r'^(\+880|0)(1[3-9]\d{8})$').hasMatch(phone)) {
+      setState(() => errorMessage =
+          "Please enter a valid Bangladesh phone number (e.g., +8801XXXXXXXXX or 01XXXXXXXXX)");
+      return false;
+    }
+
+    return true;
+  }
+
+  final AuthService _authService = AuthService();
+
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final email = emailController.text.trim();
+    final email = emailController.text.trim().toLowerCase(); // Convert to lowercase
     final password = passwordController.text.trim();
     final confirmPassword = confirmPasswordController.text.trim();
+    final phone = phoneController.text.trim();
 
     if (password != confirmPassword) {
       setState(() => errorMessage = "Passwords do not match.");
@@ -50,131 +92,83 @@ class _RegistrationFormDialogState extends State<RegistrationFormDialog> {
     });
 
     try {
-      // Validate email format
-      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
-        setState(() => errorMessage = "Please enter a valid email address.");
+      // Basic validations
+      if (!_validateInputs(email, password, phone)) {
+        setState(() => isLoading = false);
         return;
       }
 
-      // Validate password strength
-      if (!RegExp(
-        r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$',
-      ).hasMatch(password)) {
-        setState(
-          () => errorMessage =
-              "Password must be at least 8 characters long and include both letters and numbers.",
-        );
-        return;
-      }
-
-      // Validate phone number format for Bangladesh
-      final phone = phoneController.text.trim();
-      if (!RegExp(r'^(\+880|0)(1[3-9]\d{8})$').hasMatch(phone)) {
-        setState(
-          () => errorMessage =
-              "Please enter a valid Bangladesh phone number (e.g., +8801XXXXXXXXX or 01XXXXXXXXX)",
-        );
-        return;
-      }
-
-      // First create the auth user using FirebaseAuth directly
-      final userCredential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(email: email, password: password);
-
-      final user = userCredential.user;
-
-      if (user != null) {
-        // Send email verification
-        await user.sendEmailVerification();
-
-        if (isDonor) {
-          // Validate age for donors
-          final age = int.tryParse(ageController.text.trim());
-          if (age == null || age < 18 || age > 65) {
-            setState(
-              () => errorMessage = "Age must be between 18 and 65 years.",
-            );
-            await user.delete(); // Delete the created user if validation fails
-            return;
-          }
-
-          // Create donor profile with simplified map approach
-          final userData = <String, dynamic>{
-            'uid': user.uid,
-            'fullName': nameController.text.trim(),
-            'email': email,
-            'role': 'Donor',
-            'bloodType': bloodGroup,
-            'age': ageController.text.trim(),
-            'weight': '',
-            'phone': phone,
-            'address': addressController.text.trim(),
-            'gender': gender,
-            'lastDonation': null,
-            'createdAt': FieldValue.serverTimestamp(),
-            'isAvailable': true,
-            'totalDonations': 0,
-          };
-
-          // Add user data to Firestore directly
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .set(userData);
-        } else {
-          // Create hospital profile with simplified map approach
-          final userData = <String, dynamic>{
-            'uid': user.uid,
-            'fullName': hospitalNameController.text.trim(),
-            'email': email,
-            'role': 'Hospital',
-            'phone': phone,
-            'address': locationController.text.trim(),
-            'licenseNumber': hospitalNameController.text.trim(),
-            'bloodType': null,
-            'age': null,
-            'weight': null,
-            'gender': null,
-            'lastDonation': null,
-            'createdAt': FieldValue.serverTimestamp(),
-          };
-
-          // Add user data to Firestore directly
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .set(userData);
+      if (isDonor) {
+        final age = int.tryParse(ageController.text.trim());
+        if (age == null || age < 18 || age > 65) {
+          setState(() {
+            errorMessage = "Age must be between 18 and 65 years.";
+            isLoading = false;
+          });
+          return;
         }
-
-        if (!mounted) return;
-
-        Navigator.of(context).pop();
-
-        // Show success message
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text('🎉 Congratulations!'),
-            content: const Text(
-              'Your account has been created successfully!\n\nA verification email has been sent to your email address. Please verify your email before logging in.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pop(); // Close registration dialog
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
       }
+
+      // Create user model
+      final userModel = UserModel(
+        uid: '',  // This will be set by Firebase Auth after registration
+        fullName: isDonor ? nameController.text.trim() : hospitalNameController.text.trim(),
+        email: email,
+        role: isDonor ? 'Donor' : 'Hospital',
+        phone: phone,
+        address: isDonor ? addressController.text.trim() : locationController.text.trim(),
+        createdAt: DateTime.now(),
+        // Donor specific fields
+        bloodType: isDonor ? bloodGroup : null,
+        age: isDonor ? int.tryParse(ageController.text.trim()) : null,
+        gender: isDonor ? gender : null,
+        lastDonation: null,
+        isAvailable: isDonor ? true : null,
+        totalDonations: isDonor ? 0 : null,
+        weight: isDonor ? '' : null,
+        // Hospital specific fields
+        licenseNumber: isDonor ? null : hospitalNameController.text.trim(),
+      );
+
+      final result = await _authService.register(userModel, password);
+
+      if (!result['success']) {
+        setState(() => errorMessage = result['message']);
+        return;
+      }
+
+      if (!mounted) return;
+
+      Navigator.of(context).pop();
+
+      // Show success message for 3 seconds
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('🎉 Congratulations!'),
+          content: const Text(
+            'Your account has been created successfully!\n\nYou can now login with your email and password.',
+          ),
+          // No actions - dialog will auto-dismiss
+        ),
+      );
+
+      // Auto-dismiss after 3 seconds
+      Timer(const Duration(seconds: 3), () {
+        if (Navigator.canPop(context)) {
+          Navigator.of(context).pop(); // Close success dialog
+          Navigator.of(context).pop(); // Close registration dialog
+        }
+      });
     } catch (e) {
-      setState(() => errorMessage = "Registration failed: ${e.toString()}");
+      print('Error during registration:');
+      print(e.toString());
+      setState(() => errorMessage = 'Registration failed: ${e.toString()}');
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 

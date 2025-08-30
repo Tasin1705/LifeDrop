@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_analytics/observer.dart';
+
 
 import 'firebase_options.dart'; // Generated via `flutterfire configure`
 
@@ -17,6 +17,13 @@ void main() async {
 
   // ✅ Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // TODO: Re-enable App Check after API is enabled
+  // await FirebaseAppCheck.instance.activate(
+  //   webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
+  //   androidProvider: AndroidProvider.debug,
+  //   appleProvider: AppleProvider.appAttest,
+  // );
 
   runApp(const MyApp());
 }

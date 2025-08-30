@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/auth_service.dart';
 
 class LoginFormDialog extends StatefulWidget {
   const LoginFormDialog({super.key});
@@ -16,105 +15,47 @@ class _LoginFormDialogState extends State<LoginFormDialog> {
   bool isLoading = false;
   String? errorMessage;
 
+  final _authService = AuthService();
+
   Future<void> _login() async {
+    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+      setState(() => errorMessage = 'Please fill in all fields');
+      return;
+    }
+
     setState(() {
       isLoading = true;
       errorMessage = null;
     });
 
     try {
-      final userCredential = await FirebaseAuth.instance
-          .signInWithEmailAndPassword(
-            email: emailController.text.trim(),
-            password: passwordController.text,
-          );
-
-      final user = userCredential.user;
-
-      if (user == null) {
-        setState(() => errorMessage = "Login failed: user not found.");
+      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(emailController.text.trim())) {
+        setState(() => errorMessage = "Please enter a valid email address.");
         return;
       }
 
-      // Check if email is verified
-      if (!user.emailVerified) {
-        setState(
-          () => errorMessage = "Please verify your email before logging in.",
-        );
+      final result = await _authService.signIn(
+        emailController.text.trim(),
+        passwordController.text,
+      );
 
-        // Show resend verification option
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Email Not Verified'),
-            content: const Text(
-              'Please check your email and click the verification link. Would you like to resend the verification email?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  try {
-                    await user.sendEmailVerification();
-                    Navigator.pop(context);
-                    setState(
-                      () => errorMessage =
-                          "Verification email sent! Please check your inbox.",
-                    );
-                  } catch (e) {
-                    Navigator.pop(context);
-                    setState(
-                      () => errorMessage =
-                          "Failed to send verification email. Try again later.",
-                    );
-                  }
-                },
-                child: const Text('Resend'),
-              ),
-            ],
-          ),
-        );
+      if (!result['success']) {
+        setState(() => errorMessage = result['message']);
         return;
       }
 
+      if (!mounted) return;
       Navigator.pop(context); // Close the dialog
 
-      // Check user role from Firestore and navigate accordingly
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      if (userDoc.exists) {
-        final userData = userDoc.data();
-        final String role = userData?['role'] ?? 'Donor';
-
-        if (role == 'Hospital') {
-          Navigator.pushReplacementNamed(context, '/hospital_dashboard');
-        } else {
-          Navigator.pushReplacementNamed(context, '/dashboard');
-        }
+      // Navigate based on user role
+      if (result['role'] == 'Hospital') {
+        Navigator.pushReplacementNamed(context, '/hospital_dashboard');
       } else {
-        Navigator.pushReplacementNamed(
-          context,
-          '/dashboard',
-        ); // Default to donor dashboard
+        Navigator.pushReplacementNamed(context, '/dashboard');
       }
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        setState(() => errorMessage = 'No account found for that email.');
-      } else if (e.code == 'wrong-password') {
-        setState(() => errorMessage = 'Incorrect password.');
-      } else if (e.code == 'invalid-email') {
-        setState(() => errorMessage = 'Invalid email format.');
-      } else {
-        setState(() => errorMessage = 'Login failed. Please try again.');
-      }
+
     } catch (e) {
-      setState(() => errorMessage = 'Unexpected error. Try again later.');
+      setState(() => errorMessage = 'An unexpected error occurred');
     } finally {
       setState(() => isLoading = false);
     }

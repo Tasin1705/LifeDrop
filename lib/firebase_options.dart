@@ -90,4 +90,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'life-drop-c05df.firebasestorage.app',
     measurementId: 'G-EXR1Y11SHY',
   );
+
 }

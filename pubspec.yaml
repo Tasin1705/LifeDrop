@@ -5,7 +5,8 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.8.1
+  sdk: '>=3.5.0 <4.0.0'
+  flutter: ">=3.24.0"
 
 dependencies:
   flutter:
@@ -17,13 +18,14 @@ dependencies:
   geocoding: ^2.1.0
   
   # Firebase packages
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.15.3
-  cloud_firestore: ^4.13.6
-  firebase_storage: ^11.5.6
-  google_sign_in: ^6.2.1
-  firebase_analytics: ^10.10.7
-  firebase_messaging: ^14.7.10
+  firebase_core: ^3.15.2
+  firebase_auth: ^5.7.0
+  firebase_app_check: ^0.3.2+10
+  cloud_firestore: ^5.6.12
+  firebase_storage: ^12.4.10
+  google_sign_in: ^6.3.0
+  firebase_analytics: ^11.6.0
+  firebase_messaging: ^15.2.10
 
 
 

@@ -2,8 +2,39 @@ import 'package:flutter/material.dart';
 import 'registration_form_dialog.dart';
 import 'login_form_dialog.dart';
 
-class HeroSection extends StatelessWidget {
+class HeroSection extends StatefulWidget {
   const HeroSection({super.key});
+
+  @override
+  State<HeroSection> createState() => _HeroSectionState();
+}
+
+class _HeroSectionState extends State<HeroSection> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.2,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   void _showDonorOptions(BuildContext context) {
     showDialog(
@@ -49,12 +80,15 @@ class HeroSection extends StatelessWidget {
             'Save Lives with',
             style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
           ),
-          const Text(
-            'LifeDrop',
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: Colors.red,
+          ScaleTransition(
+            scale: _scaleAnimation,
+            child: const Text(
+              'LifeDrop',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -64,41 +98,20 @@ class HeroSection extends StatelessWidget {
             style: TextStyle(fontSize: 16, height: 1.6),
           ),
           const SizedBox(height: 24),
-          Wrap(
-            spacing: 16,
-            runSpacing: 12,
-            children: [
-              ElevatedButton.icon(
-                onPressed: () => _showDonorOptions(context),
-                icon: const Icon(Icons.favorite, color: Colors.white),
-                label: const Text(
-                  'Become a Donor',
-                  style: TextStyle(color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
-                ),
+          ElevatedButton.icon(
+            onPressed: () => _showDonorOptions(context),
+            icon: const Icon(Icons.favorite, color: Colors.white),
+            label: const Text(
+              'Join Us',
+              style: TextStyle(color: Colors.white),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 16,
               ),
-              OutlinedButton.icon(
-                onPressed: () => _showDonorOptions(context),
-                icon: const Icon(Icons.warning, color: Colors.red),
-                label: const Text(
-                  'Emergency',
-                  style: TextStyle(color: Colors.red),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.red),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
