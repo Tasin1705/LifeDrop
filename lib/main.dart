@@ -9,7 +9,7 @@ import 'firebase_options.dart'; // Generated via `flutterfire configure`
 import 'splash_screen.dart';
 import 'homepage/home_page.dart';
 import 'dashboard/donor_dashboard.dart';
-import 'hospital_dashboard.dart';
+import 'hospital/hospital.dart';
 import 'auth_wrapper.dart';
 
 void main() async {

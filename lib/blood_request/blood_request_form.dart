@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:first_app/blood_request/blood_request_map.dart';
+import '../services/notification_service.dart';
 
 class BloodRequestForm extends StatefulWidget {
   final String userType; // 'donor' or 'hospital'
@@ -95,7 +98,7 @@ class _BloodRequestFormState extends State<BloodRequestForm> {
               const SizedBox(height: 20),
               ElevatedButton(
                 child: const Text('Submit Request'),
-                onPressed: () {
+                onPressed: () async {
                   if (_formKey.currentState!.validate()) {
                     if (location == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -106,20 +109,90 @@ class _BloodRequestFormState extends State<BloodRequestForm> {
                       return;
                     }
 
-                    // ✅ You can send this to your backend later
-                    print('Blood Group: $bloodGroup');
-                    print('Units: $units');
-                    print('Contact: $contact');
-                    print('Required Date: $requiredDate');
-                    print(
-                        'Location: ${location!.latitude}, ${location!.longitude}');
+                    try {
+                      // Show loading indicator
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => const AlertDialog(
+                          content: Row(
+                            children: [
+                              CircularProgressIndicator(),
+                              SizedBox(width: 16),
+                              Text('Sending notifications...'),
+                            ],
+                          ),
+                        ),
+                      );
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Request submitted!')),
-                    );
+                      // Get current user info
+                      final user = FirebaseAuth.instance.currentUser;
+                      String requesterName = 'Unknown';
+                      
+                      if (user != null) {
+                        final userDoc = await FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(user.uid)
+                            .get();
+                        
+                        if (userDoc.exists) {
+                          requesterName = userDoc.data()?['fullName'] ?? 'Unknown';
+                        }
+                      }
 
-                    // ✅ Navigate back to dashboard or previous screen
-                    Navigator.pop(context);
+                      // Send notifications to eligible donors
+                      final notifiedUsers = await NotificationService.sendBloodRequestNotification(
+                        bloodType: bloodGroup!,
+                        units: units!,
+                        contact: contact!,
+                        requiredDate: requiredDate!,
+                        latitude: location!.latitude,
+                        longitude: location!.longitude,
+                        requesterName: requesterName,
+                        requesterType: widget.userType == 'donor' ? 'Donor' : 'Hospital',
+                      );
+
+                      // Store the blood request in Firestore
+                      await FirebaseFirestore.instance.collection('blood_requests').add({
+                        'bloodType': bloodGroup,
+                        'units': units,
+                        'contact': contact,
+                        'requiredDate': Timestamp.fromDate(requiredDate!),
+                        'latitude': location!.latitude,
+                        'longitude': location!.longitude,
+                        'requesterName': requesterName,
+                        'requesterType': widget.userType == 'donor' ? 'Donor' : 'Hospital',
+                        'requesterId': user?.uid,
+                        'createdAt': Timestamp.now(),
+                        'status': 'active',
+                        'notifiedDonors': notifiedUsers,
+                      });
+
+                      // Close loading dialog
+                      Navigator.pop(context);
+
+                      // Show success message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Request submitted! ${notifiedUsers.length} eligible donors notified.'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+
+                      // Navigate back to dashboard
+                      Navigator.pop(context);
+                      
+                    } catch (e) {
+                      // Close loading dialog if open
+                      Navigator.pop(context);
+                      
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error submitting request: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   }
                 },
               ),

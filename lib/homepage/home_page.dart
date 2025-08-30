@@ -9,10 +9,10 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFFFF0F2), // Light pink background
+      backgroundColor: const Color(0xFFFFF0F2), // Light pink background
       body: SingleChildScrollView(
         child: Column(
-          children: [HeroSection(), StatisticsRow(), WhyChooseSection()],
+          children: const [HeroSection(), StatisticsRow(), WhyChooseSection()],
         ),
       ),
     );

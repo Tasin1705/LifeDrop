@@ -31,7 +31,44 @@ class _RegistrationFormDialogState extends State<RegistrationFormDialog> {
   String? errorMessage;
   String gender = 'Male';
   String bloodGroup = 'A+';
+  List<String> selectedMedicalHistory = [];
   final bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+  final List<String> medicalConditions = [
+    'None (No medical history)',
+    'HIV/AIDS',
+    'Hepatitis B',
+    'Hepatitis C',
+    'Malaria',
+    'Tuberculosis (TB)',
+    'Syphilis',
+    'Chagas disease',
+    'West Nile Virus',
+    'Zika Virus',
+    'Dengue',
+    'Human T-lymphotropic virus (HTLV)',
+    'Creutzfeldt-Jakob disease (CJD)',
+    'Chikungunya',
+    'Leprosy',
+    'Ebola Virus Disease',
+    'Rabies',
+    'Yellow Fever',
+    'Measles',
+    'Sickle Cell Disease',
+    'Thalassemia',
+    'Hemophilia',
+    'Autoimmune Disorders',
+    'Cancer',
+    'Blood Clotting Disorders',
+    'Heart Disease',
+    'Renal Failure or Kidney Disease',
+    'Diabetes',
+    'Asthma',
+    'Chronic Fatigue Syndrome',
+    'Epilepsy or Seizure Disorders',
+    'Hypertension (High Blood Pressure)',
+    'Pregnancy',
+  ];
 
   @override
   void dispose() {
@@ -71,6 +108,61 @@ class _RegistrationFormDialogState extends State<RegistrationFormDialog> {
     return true;
   }
 
+  Future<void> _selectMedicalHistory() async {
+    List<String> tempSelectedConditions = List.from(selectedMedicalHistory);
+    
+    final result = await showDialog<List<String>>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Medical History'),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 400,
+            child: ListView.builder(
+              itemCount: medicalConditions.length,
+              itemBuilder: (context, index) {
+                final condition = medicalConditions[index];
+                final isSelected = tempSelectedConditions.contains(condition);
+                
+                return CheckboxListTile(
+                  title: Text(condition, style: const TextStyle(fontSize: 14)),
+                  value: isSelected,
+                  activeColor: Colors.red,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      if (value == true) {
+                        tempSelectedConditions.add(condition);
+                      } else {
+                        tempSelectedConditions.remove(condition);
+                      }
+                    });
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, tempSelectedConditions),
+              child: const Text('Save', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        selectedMedicalHistory = result;
+      });
+    }
+  }
+
   final AuthService _authService = AuthService();
 
   Future<void> _submitForm() async {
@@ -107,6 +199,15 @@ class _RegistrationFormDialogState extends State<RegistrationFormDialog> {
           });
           return;
         }
+
+        // Validate medical history selection
+        if (selectedMedicalHistory.isEmpty) {
+          setState(() {
+            errorMessage = "Please select at least one medical condition or 'None' if you have no medical history.";
+            isLoading = false;
+          });
+          return;
+        }
       }
 
       // Create user model
@@ -126,6 +227,7 @@ class _RegistrationFormDialogState extends State<RegistrationFormDialog> {
         isAvailable: isDonor ? true : null,
         totalDonations: isDonor ? 0 : null,
         weight: isDonor ? '' : null,
+        medicalHistory: isDonor ? selectedMedicalHistory : null,
         // Hospital specific fields
         licenseNumber: isDonor ? null : hospitalNameController.text.trim(),
       );
@@ -241,6 +343,7 @@ class _RegistrationFormDialogState extends State<RegistrationFormDialog> {
                       .toList(),
                   onChanged: (val) => setState(() => bloodGroup = val!),
                 ),
+                _buildMedicalHistoryField(),
               ] else ...[
                 _textField(hospitalNameController, 'Hospital Name *'),
                 _textField(locationController, 'Location *'),
@@ -315,6 +418,43 @@ class _RegistrationFormDialogState extends State<RegistrationFormDialog> {
                   ),
                 ],
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMedicalHistoryField() {
+    String displayText = selectedMedicalHistory.isEmpty 
+        ? 'Select Medical History *' 
+        : '${selectedMedicalHistory.length} condition(s) selected';
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: _selectMedicalHistory,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: selectedMedicalHistory.isEmpty ? Colors.red : Colors.grey,
+              width: selectedMedicalHistory.isEmpty ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  displayText,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: selectedMedicalHistory.isEmpty ? Colors.red : Colors.black,
+                  ),
+                ),
+              ),
+              const Icon(Icons.arrow_drop_down, color: Colors.grey),
             ],
           ),
         ),

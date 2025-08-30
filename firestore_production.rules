@@ -1,0 +1,79 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Users collection - users can read and write their own data
+    match /users/{userId} {
+      // Users can read and write their own document
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Allow other authenticated users to read basic profile info (for blood matching)
+      // but restrict sensitive fields
+      allow read: if request.auth != null && 
+        resource.data.keys().hasAny(['fullName', 'bloodType', 'role', 'isAvailable']);
+    }
+    
+    // Notifications collection - secure notification access
+    match /notifications/{notificationId} {
+      // Users can read their own notifications
+      allow read: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      
+      // Users can create notifications for others (for blood requests)
+      allow create: if request.auth != null && 
+        request.resource.data.userId is string &&
+        request.resource.data.keys().hasAll(['userId', 'title', 'message', 'type', 'isRead', 'createdAt']);
+      
+      // Users can update their own notifications (mark as read, delete)
+      allow update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+    }
+    
+    // Blood requests collection - blood request management
+    match /blood_requests/{requestId} {
+      // Anyone authenticated can read blood requests (for emergency situations)
+      allow read: if request.auth != null;
+      
+      // Only authenticated users can create blood requests
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.requesterId &&
+        request.resource.data.keys().hasAll(['bloodType', 'units', 'contact', 'requiredDate', 'requesterId', 'createdAt']);
+      
+      // Only the requester can update their own requests
+      allow update: if request.auth != null && 
+        request.auth.uid == resource.data.requesterId;
+      
+      // Only the requester can delete their own requests
+      allow delete: if request.auth != null && 
+        request.auth.uid == resource.data.requesterId;
+    }
+    
+    // Donation history collection (if you add this feature)
+    match /donations/{donationId} {
+      // Users can read their own donation history
+      allow read: if request.auth != null && 
+        request.auth.uid == resource.data.donorId;
+      
+      // Users can create their own donation records
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.donorId;
+      
+      // Prevent unauthorized updates or deletions
+      allow update, delete: if false;
+    }
+    
+    // Hospital verification collection (if you add hospital verification)
+    match /hospital_verifications/{verificationId} {
+      // Only hospitals can read their own verification status
+      allow read: if request.auth != null && 
+        request.auth.uid == resource.data.hospitalId;
+      
+      // Only hospitals can create verification requests
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.hospitalId;
+      
+      // Prevent unauthorized updates or deletions
+      allow update, delete: if false;
+    }
+  }
+}

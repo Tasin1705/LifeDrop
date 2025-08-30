@@ -17,6 +17,7 @@ class UserModel {
   final bool? isAvailable;
   final int? totalDonations;
   final String? weight;
+  final List<String>? medicalHistory;
 
   // Hospital-specific fields
   final String? licenseNumber;
@@ -36,6 +37,7 @@ class UserModel {
     this.isAvailable,
     this.totalDonations,
     this.weight,
+    this.medicalHistory,
     this.licenseNumber,
   });
 
@@ -48,19 +50,22 @@ class UserModel {
       phone: map['phone']?.toString() ?? '',
       address: map['address']?.toString() ?? '',
       createdAt: map['createdAt'] != null 
-          ? (map['createdAt'] as Timestamp).toDate()
+          ? (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now()
           : DateTime.now(),
       bloodType: map['bloodType']?.toString(),
       age: map['age'] != null ? int.tryParse(map['age'].toString()) : null,
       gender: map['gender']?.toString(),
       lastDonation: map['lastDonation'] != null 
-          ? (map['lastDonation'] as Timestamp).toDate() 
+          ? (map['lastDonation'] as Timestamp?)?.toDate() 
           : null,
       isAvailable: map['isAvailable'] as bool? ?? true,
       totalDonations: map['totalDonations'] != null 
           ? int.tryParse(map['totalDonations'].toString()) ?? 0
           : 0,
       weight: map['weight']?.toString(),
+      medicalHistory: map['medicalHistory'] != null 
+          ? List<String>.from(map['medicalHistory'])
+          : null,
       licenseNumber: map['licenseNumber']?.toString(),
     );
   }
@@ -88,6 +93,7 @@ class UserModel {
         'isAvailable': isAvailable ?? true,
         'totalDonations': totalDonations ?? 0,
         'weight': weight ?? '',
+        'medicalHistory': medicalHistory ?? [],
       });
     } else if (role == 'Hospital') {
       data.addAll({
@@ -113,6 +119,7 @@ class UserModel {
     bool? isAvailable,
     int? totalDonations,
     String? weight,
+    List<String>? medicalHistory,
     String? licenseNumber,
   }) {
     return UserModel(
@@ -130,6 +137,7 @@ class UserModel {
       isAvailable: isAvailable ?? this.isAvailable,
       totalDonations: totalDonations ?? this.totalDonations,
       weight: weight ?? this.weight,
+      medicalHistory: medicalHistory ?? this.medicalHistory,
       licenseNumber: licenseNumber ?? this.licenseNumber,
     );
   }

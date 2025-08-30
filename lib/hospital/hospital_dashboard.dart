@@ -1,37 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'schedule_tab.dart';
-import 'history_tab2.dart';
-import 'profile_tab.dart';
-import 'overview_tab.dart';
-import '../blood_request/blood_request_form.dart';
-import '../homepage/home_page.dart';  // Import HomePage for the logout redirection
+import 'hospital_overview_tab.dart';
+import 'hospital_requests_tab.dart';
+import 'hospital_donors_tab.dart';
+import 'hospital_profile_tab.dart';
+import '../homepage/home_page.dart';
 import '../screens/notifications_screen.dart';
 import '../services/notification_service.dart';
 
-class DonorDashboard extends StatefulWidget {
-  const DonorDashboard({super.key});
+class HospitalDashboard extends StatefulWidget {
+  const HospitalDashboard({super.key});
 
   @override
-  State<DonorDashboard> createState() => _DonorDashboardState();
+  State<HospitalDashboard> createState() => _HospitalDashboardState();
 }
 
-class _DonorDashboardState extends State<DonorDashboard> {
+class _HospitalDashboardState extends State<HospitalDashboard> {
   int _selectedIndex = 0;
   bool _drawerOpen = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final List<Widget> _pages = [
-    const OverviewTab(),
-    const ScheduleTab(),
-    const HistoryTab(),
-    const ProfileTab(),
+    const HospitalOverviewTab(),
+    const HospitalRequestsTab(),
+    const HospitalDonorsTab(),
+    const HospitalProfileTab(),
   ];
 
   final List<Map<String, dynamic>> _navigationItems = [
-    {'icon': Icons.favorite, 'title': 'Overview'},
-    {'icon': Icons.calendar_today, 'title': 'Schedule'},
-    {'icon': Icons.history, 'title': 'History'},
+    {'icon': Icons.dashboard, 'title': 'Overview'},
+    {'icon': Icons.bloodtype, 'title': 'Requests'},
+    {'icon': Icons.people, 'title': 'Donors'},
     {'icon': Icons.person, 'title': 'Profile'},
   ];
 
@@ -113,7 +112,7 @@ class _DonorDashboardState extends State<DonorDashboard> {
             ),
           ),
 
-          // Request Blood Button
+          // Emergency Contact Button
           Container(
             padding: const EdgeInsets.all(15),
             child: SizedBox(
@@ -127,18 +126,13 @@ class _DonorDashboardState extends State<DonorDashboard> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                icon: const Icon(Icons.bloodtype),
+                icon: const Icon(Icons.emergency),
                 label: const Text(
-                  'Request Blood',
+                  'Emergency Contact',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const BloodRequestForm(userType: 'donor'),
-                    ),
-                  );
+                  _showEmergencyDialog();
                 },
               ),
             ),
@@ -167,6 +161,7 @@ class _DonorDashboardState extends State<DonorDashboard> {
             }
           },
         ),
+        
         actions: [
           // Notification bell
           StreamBuilder<int>(
@@ -220,10 +215,7 @@ class _DonorDashboardState extends State<DonorDashboard> {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const HomePage()),
-              );
+              _showLogoutDialog();
             },
           ),
         ],
@@ -247,6 +239,87 @@ class _DonorDashboardState extends State<DonorDashboard> {
               ],
             )
           : _pages[_selectedIndex],
+    );
+  }
+
+  void _showEmergencyDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.emergency, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Emergency Contact'),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'For urgent blood requirements:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            Text('📞 Emergency Hotline: 108'),
+            Text('📞 Blood Bank: 1910'),
+            Text('📞 Red Cross: 1962'),
+            SizedBox(height: 10),
+            Text(
+              'These numbers are available 24/7 for emergency blood requirements.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement emergency call functionality
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Calling emergency services...'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Call 108', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const HomePage()),
+                (route) => false,
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Logout', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
 }
