@@ -2,8 +2,21 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // Helper function to check if user is admin (temporarily relaxed for testing)
+    function isAdmin() {
+      return request.auth != null && 
+        (request.auth.token.email == 'admin@gmail.com' || 
+         request.auth.token.email == 'minhazarefin60@gmail.com'); // Add your email for testing
+    }
+    
     // Users collection - users can read and write their own data
     match /users/{userId} {
+      // Admin has full access to all user documents
+      allow read, write: if isAdmin();
+      
+      // Temporarily allow any authenticated user to read and write users collection for testing
+      allow read, write: if request.auth != null;
+      
       // Users can read and write their own document
       allow read, write: if request.auth != null && request.auth.uid == userId;
       
@@ -15,6 +28,9 @@ service cloud.firestore {
     
     // Notifications collection - secure notification access
     match /notifications/{notificationId} {
+      // Admin has full access to all notifications
+      allow read, write: if isAdmin();
+      
       // Users can read their own notifications
       allow read: if request.auth != null && 
         request.auth.uid == resource.data.userId;
@@ -31,6 +47,9 @@ service cloud.firestore {
     
     // Blood requests collection - blood request management
     match /blood_requests/{requestId} {
+      // Admin has full access to all blood requests
+      allow read, write: if isAdmin();
+      
       // Anyone authenticated can read blood requests (for emergency situations)
       allow read: if request.auth != null;
       
@@ -48,8 +67,49 @@ service cloud.firestore {
         request.auth.uid == resource.data.requesterId;
     }
     
+    // Blood acceptances collection - track blood request acceptances
+    match /blood_acceptances/{acceptanceId} {
+      // Admin has full access to all blood acceptances
+      allow read, write: if isAdmin();
+      
+      // Allow any authenticated user to read blood acceptances (temporarily for debugging)
+      allow read: if request.auth != null;
+      
+      // Donors can create their own acceptance records
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.donorId &&
+        request.resource.data.keys().hasAll(['requestId', 'donorId', 'hospitalId', 'bloodType', 'units', 'status', 'acceptedAt']);
+      
+      // Allow donors and hospitals to update status (e.g., completed, cancelled)
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.donorId || request.auth.uid == resource.data.hospitalId);
+      
+      // Prevent deletion of acceptance records for audit purposes
+      allow delete: if false;
+    }
+    
+    // Donation history collection - track completed blood donations
+    match /donation_history/{donationId} {
+      // Admin has full access to all donation history
+      allow read, write: if isAdmin();
+      
+      // Allow any authenticated user to read donation history (temporarily for debugging)
+      allow read: if request.auth != null;
+      
+      // Only hospitals can create donation history records when confirming donations
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.hospitalId &&
+        request.resource.data.keys().hasAll(['donorId', 'donorName', 'hospitalId', 'hospitalName', 'bloodType', 'units', 'donationDate', 'status']);
+      
+      // Prevent unauthorized updates or deletions of donation history for audit purposes
+      allow update, delete: if isAdmin();
+    }
+    
     // Donation history collection (if you add this feature)
     match /donations/{donationId} {
+      // Admin has full access to all donations
+      allow read, write: if isAdmin();
+      
       // Users can read their own donation history
       allow read: if request.auth != null && 
         request.auth.uid == resource.data.donorId;
@@ -64,6 +124,9 @@ service cloud.firestore {
     
     // Hospitals collection - hospital profile and data management
     match /hospitals/{hospitalId} {
+      // Admin has full access to all hospital data
+      allow read, write: if isAdmin();
+      
       // Hospitals can read and write their own data
       allow read, write: if request.auth != null && 
         request.auth.uid == hospitalId;
@@ -79,6 +142,9 @@ service cloud.firestore {
     
     // Hospital verification collection (if you add hospital verification)
     match /hospital_verifications/{verificationId} {
+      // Admin has full access to all verification requests
+      allow read, write: if isAdmin();
+      
       // Only hospitals can read their own verification status
       allow read: if request.auth != null && 
         request.auth.uid == resource.data.hospitalId;

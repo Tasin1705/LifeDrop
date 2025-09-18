@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/notification_service.dart';
 
 class HospitalRequestsTab extends StatefulWidget {
@@ -34,14 +35,17 @@ class _HospitalRequestsTabState extends State<HospitalRequestsTab> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Blood Requests',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                Expanded(
+                  child: const Text(
+                    'Blood Requests',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
                 ),
+                const SizedBox(width: 16),
                 ElevatedButton.icon(
                   onPressed: () {
                     _showNewBloodRequestDialog();
@@ -195,18 +199,27 @@ class _HospitalRequestsTabState extends State<HospitalRequestsTab> {
 
                             const SizedBox(height: 10),
 
-                            Row(
-                              children: [
-                                const Icon(Icons.phone, color: Colors.green, size: 20),
-                                const SizedBox(width: 8),
-                                Text(
-                                  data['contact'] ?? 'No contact',
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 10),
+                            if (data['urgencyLevel'] != null) ...[
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.priority_high, 
+                                    color: _getUrgencyColor(data['urgencyLevel']), 
+                                    size: 20
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Urgency: ${data['urgencyLevel']}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: _getUrgencyColor(data['urgencyLevel']),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                            ],
 
                             Row(
                               children: [
@@ -302,6 +315,19 @@ class _HospitalRequestsTabState extends State<HospitalRequestsTab> {
     }
   }
 
+  Color _getUrgencyColor(String urgency) {
+    switch (urgency.toLowerCase()) {
+      case 'high':
+        return Colors.red;
+      case 'medium':
+        return Colors.orange;
+      case 'low':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
   String _getStatusText(String status) {
     switch (status.toLowerCase()) {
       case 'in_progress':
@@ -347,11 +373,33 @@ class _HospitalRequestsTabState extends State<HospitalRequestsTab> {
             children: [
               _buildDetailRow('Blood Type:', data['bloodType'] ?? 'N/A'),
               _buildDetailRow('Units Required:', '${data['units'] ?? 'N/A'}'),
+              if (data['urgencyLevel'] != null)
+                _buildDetailRow('Urgency Level:', data['urgencyLevel']),
               _buildDetailRow('Contact:', data['contact'] ?? 'N/A'),
               _buildDetailRow('Status:', data['status'] ?? 'pending'),
               if (data['requiredDate'] != null)
                 _buildDetailRow('Required By:', _formatFullDate((data['requiredDate'] as Timestamp?)?.toDate() ?? DateTime.now())),
               _buildDetailRow('Created:', _formatFullDate((data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now())),
+              
+              // Call button
+              if (data['contact'] != null && data['contact'].toString().isNotEmpty && data['contact'] != 'No contact') ...[
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _makePhoneCall(data['contact']),
+                    icon: const Icon(Icons.phone, color: Colors.white),
+                    label: const Text('Call Hospital', style: TextStyle(color: Colors.white)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -384,12 +432,42 @@ class _HospitalRequestsTabState extends State<HospitalRequestsTab> {
     );
   }
 
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+    try {
+      if (await canLaunchUrl(launchUri)) {
+        await launchUrl(launchUri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not launch phone dialer'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error launching phone dialer: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   void _editRequest(Map<String, dynamic> data, String requestId) {
-    // TODO: Implement edit functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Edit functionality coming soon'),
-        backgroundColor: Colors.orange,
+    showDialog(
+      context: context,
+      builder: (context) => EditBloodRequestDialog(
+        requestId: requestId,
+        currentData: data,
       ),
     );
   }
@@ -449,13 +527,45 @@ class NewBloodRequestDialog extends StatefulWidget {
 
 class _NewBloodRequestDialogState extends State<NewBloodRequestDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _contactController = TextEditingController();
   final _unitsController = TextEditingController();
   String? _selectedBloodType;
+  String? _urgencyLevel; // No default value
   DateTime? _requiredDate;
   bool _isLoading = false;
+  String? _hospitalContact;
+  String? _hospitalAddress;
+  String? _hospitalName;
 
   final List<String> _bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHospitalInfo();
+  }
+
+  Future<void> _loadHospitalInfo() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        
+        if (userDoc.exists) {
+          final data = userDoc.data()!;
+          setState(() {
+            _hospitalContact = data['phone'] ?? '';
+            _hospitalAddress = data['address'] ?? '';
+            _hospitalName = data['fullName'] ?? 'Unknown Hospital';
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading hospital info: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -510,21 +620,69 @@ class _NewBloodRequestDialogState extends State<NewBloodRequestDialog> {
                 },
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _contactController,
+              DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
-                  labelText: 'Contact Number',
+                  labelText: 'Urgency Level',
                   border: OutlineInputBorder(),
+                  hintText: 'Set urgency',
                 ),
-                keyboardType: TextInputType.phone,
+                value: _urgencyLevel,
+                items: const [
+                  DropdownMenuItem(value: 'High', child: Text('High')),
+                  DropdownMenuItem(value: 'Medium', child: Text('Medium')),
+                  DropdownMenuItem(value: 'Low', child: Text('Low')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _urgencyLevel = value;
+                  });
+                },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter contact number';
+                    return 'Please select urgency level';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
+              // Show hospital information (read-only)
+              if (_hospitalName != null) ...[
+                TextFormField(
+                  initialValue: _hospitalName,
+                  decoration: const InputDecoration(
+                    labelText: 'Hospital/Organization Name',
+                    border: OutlineInputBorder(),
+                  ),
+                  enabled: false,
+                  style: const TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+              ],
+              if (_hospitalContact != null) ...[
+                TextFormField(
+                  initialValue: _hospitalContact,
+                  decoration: const InputDecoration(
+                    labelText: 'Hospital/Organization Contact',
+                    border: OutlineInputBorder(),
+                  ),
+                  enabled: false,
+                  style: const TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+              ],
+              if (_hospitalAddress != null) ...[
+                TextFormField(
+                  initialValue: _hospitalAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Hospital/Organization Address',
+                    border: OutlineInputBorder(),
+                  ),
+                  enabled: false,
+                  style: const TextStyle(color: Colors.grey),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 16),
+              ],
               InkWell(
                 onTap: () async {
                   final date = await showDatePicker(
@@ -548,14 +706,17 @@ class _NewBloodRequestDialogState extends State<NewBloodRequestDialog> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        _requiredDate != null
-                            ? 'Required by: ${_requiredDate!.day}/${_requiredDate!.month}/${_requiredDate!.year}'
-                            : 'Select required date (optional)',
-                        style: TextStyle(
-                          color: _requiredDate != null ? Colors.black : Colors.grey,
+                      Expanded(
+                        child: Text(
+                          _requiredDate != null
+                              ? 'Required by: ${_requiredDate!.day}/${_requiredDate!.month}/${_requiredDate!.year}'
+                              : 'Select required date (optional)',
+                          style: TextStyle(
+                            color: _requiredDate != null ? Colors.black : Colors.grey,
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 8),
                       const Icon(Icons.calendar_today),
                     ],
                   ),
@@ -597,29 +758,23 @@ class _NewBloodRequestDialogState extends State<NewBloodRequestDialog> {
 
     try {
       final user = FirebaseAuth.instance.currentUser!;
-      
-      // Get hospital data
-      final hospitalDoc = await FirebaseFirestore.instance
-          .collection('hospitals')
-          .doc(user.uid)
-          .get();
-      
-      final hospitalData = hospitalDoc.data() ?? {};
 
       final requestData = {
         'bloodType': _selectedBloodType!,
         'units': int.parse(_unitsController.text),
-        'contact': _contactController.text,
+        'urgencyLevel': _urgencyLevel!,
+        'contact': _hospitalContact ?? 'No contact',
         'requesterId': user.uid,
-        'requesterName': hospitalData['hospitalName'] ?? 'Unknown Hospital',
-        'requesterType': 'hospital',
+        'requesterName': _hospitalName ?? 'Unknown Hospital',
+        'requesterType': 'Hospital',
         'status': 'pending',
         'createdAt': FieldValue.serverTimestamp(),
+        'hospitalAddress': _hospitalAddress,
         if (_requiredDate != null) 'requiredDate': Timestamp.fromDate(_requiredDate!),
       };
 
       // Create the blood request
-      await FirebaseFirestore.instance
+      final docRef = await FirebaseFirestore.instance
           .collection('blood_requests')
           .add(requestData);
 
@@ -627,12 +782,14 @@ class _NewBloodRequestDialogState extends State<NewBloodRequestDialog> {
       await NotificationService.sendBloodRequestNotification(
         bloodType: _selectedBloodType!,
         units: _unitsController.text,
-        contact: _contactController.text,
-        requesterName: hospitalData['hospitalName'] ?? 'Unknown Hospital',
-        requesterType: 'hospital',
+        contact: _hospitalContact ?? 'No contact',
+        requesterName: _hospitalName ?? 'Unknown Hospital',
+        requesterType: 'Hospital',
         requiredDate: _requiredDate ?? DateTime.now().add(const Duration(days: 1)),
         latitude: 0.0, // TODO: Get actual hospital location
         longitude: 0.0, // TODO: Get actual hospital location
+        requestId: docRef.id,
+        requesterId: user.uid,
       );
 
       Navigator.pop(context);
@@ -658,7 +815,244 @@ class _NewBloodRequestDialogState extends State<NewBloodRequestDialog> {
 
   @override
   void dispose() {
-    _contactController.dispose();
+    _unitsController.dispose();
+    super.dispose();
+  }
+}
+
+// Edit Blood Request Dialog
+class EditBloodRequestDialog extends StatefulWidget {
+  final String requestId;
+  final Map<String, dynamic> currentData;
+
+  const EditBloodRequestDialog({
+    super.key,
+    required this.requestId,
+    required this.currentData,
+  });
+
+  @override
+  State<EditBloodRequestDialog> createState() => _EditBloodRequestDialogState();
+}
+
+class _EditBloodRequestDialogState extends State<EditBloodRequestDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _unitsController = TextEditingController();
+  String? _selectedBloodType;
+  String? _urgencyLevel;
+  DateTime? _requiredDate;
+  bool _isLoading = false;
+
+  final List<String> _bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentData();
+  }
+
+  void _loadCurrentData() {
+    _selectedBloodType = widget.currentData['bloodType'];
+    _unitsController.text = widget.currentData['units']?.toString() ?? '';
+    _urgencyLevel = widget.currentData['urgencyLevel'];
+    
+    if (widget.currentData['requiredDate'] != null) {
+      _requiredDate = (widget.currentData['requiredDate'] as Timestamp).toDate();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit Blood Request'),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: 'Blood Type',
+                  border: OutlineInputBorder(),
+                ),
+                value: _selectedBloodType,
+                items: _bloodTypes.map((type) {
+                  return DropdownMenuItem(
+                    value: type,
+                    child: Text(type),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedBloodType = value;
+                  });
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please select a blood type';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _unitsController,
+                decoration: const InputDecoration(
+                  labelText: 'Units Required',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter units required';
+                  }
+                  if (int.tryParse(value) == null) {
+                    return 'Please enter a valid number';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: 'Urgency Level',
+                  border: OutlineInputBorder(),
+                  hintText: 'Set urgency',
+                ),
+                value: _urgencyLevel,
+                items: const [
+                  DropdownMenuItem(value: 'High', child: Text('High')),
+                  DropdownMenuItem(value: 'Medium', child: Text('Medium')),
+                  DropdownMenuItem(value: 'Low', child: Text('Low')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _urgencyLevel = value;
+                  });
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please select urgency level';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: _requiredDate ?? DateTime.now().add(const Duration(days: 1)),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (date != null) {
+                    setState(() {
+                      _requiredDate = date;
+                    });
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _requiredDate != null
+                              ? 'Required by: ${_requiredDate!.day}/${_requiredDate!.month}/${_requiredDate!.year}'
+                              : 'Select required date (optional)',
+                          style: TextStyle(
+                            color: _requiredDate != null ? Colors.black : Colors.grey,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.calendar_today),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _updateRequest,
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          child: _isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text('Update Request', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _updateRequest() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final updateData = <String, dynamic>{
+        'bloodType': _selectedBloodType!,
+        'units': int.parse(_unitsController.text),
+        'urgencyLevel': _urgencyLevel!,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      if (_requiredDate != null) {
+        updateData['requiredDate'] = Timestamp.fromDate(_requiredDate!);
+      }
+
+      // Update the blood request
+      await FirebaseFirestore.instance
+          .collection('blood_requests')
+          .doc(widget.requestId)
+          .update(updateData);
+
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Blood request updated successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error updating request: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
     _unitsController.dispose();
     super.dispose();
   }

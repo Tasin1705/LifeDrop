@@ -49,7 +49,7 @@ class _HospitalOverviewTabState extends State<HospitalOverviewTab> {
                   ),
                   const SizedBox(height: 10),
                   const Text(
-                    'Hospital Dashboard',
+                    'Dashboard Overview',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 24,
@@ -59,14 +59,14 @@ class _HospitalOverviewTabState extends State<HospitalOverviewTab> {
                   const SizedBox(height: 5),
                   StreamBuilder<DocumentSnapshot>(
                     stream: FirebaseFirestore.instance
-                        .collection('hospitals')
+                        .collection('users')
                         .doc(FirebaseAuth.instance.currentUser?.uid)
                         .snapshots(),
                     builder: (context, snapshot) {
                       if (snapshot.hasData && snapshot.data!.exists) {
                         final data = snapshot.data!.data() as Map<String, dynamic>;
                         return Text(
-                          'Welcome, ${data['hospitalName'] ?? 'Hospital'}',
+                          'Welcome, ${data['fullName'] ?? 'Hospital'}',
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 16,
@@ -105,7 +105,7 @@ class _HospitalOverviewTabState extends State<HospitalOverviewTab> {
                     'Total Donors',
                     Icons.people,
                     Colors.blue,
-                    _getTotalDonorsCount(),
+                    _getTotalDonorsWhoAcceptedCount(),
                   ),
                 ),
               ],
@@ -126,10 +126,10 @@ class _HospitalOverviewTabState extends State<HospitalOverviewTab> {
                 const SizedBox(width: 15),
                 Expanded(
                   child: _buildStatCard(
-                    'Successful',
+                    'Accepted Requests',
                     Icons.check_circle,
                     Colors.orange,
-                    _getSuccessfulRequestsCount(),
+                    _getAcceptedRequestsCount(),
                   ),
                 ),
               ],
@@ -320,20 +320,32 @@ class _HospitalOverviewTabState extends State<HospitalOverviewTab> {
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(data['status'] ?? 'pending'),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      data['status'] ?? 'pending',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                  FutureBuilder<String>(
+                    future: _getRequestStatus(doc.id),
+                    builder: (context, snapshot) {
+                      final status = snapshot.data ?? 'pending';
+                      
+                      // Only show status badge for confirmed and rejected, not pending
+                      if (status == 'pending') {
+                        return const SizedBox.shrink();
+                      }
+                      
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(status),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          status,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -346,14 +358,43 @@ class _HospitalOverviewTabState extends State<HospitalOverviewTab> {
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'completed':
+      case 'confirmed':
         return Colors.green;
-      case 'in_progress':
+      case 'accepted':
         return Colors.orange;
+      case 'pending':
+        return Colors.blue;
       case 'cancelled':
         return Colors.red;
       default:
-        return Colors.blue;
+        return Colors.grey;
+    }
+  }
+
+  Future<String> _getRequestStatus(String requestId) async {
+    try {
+      // Check if there are any acceptances for this request
+      final acceptanceQuery = await FirebaseFirestore.instance
+          .collection('blood_acceptances')
+          .where('requestId', isEqualTo: requestId)
+          .get();
+
+      if (acceptanceQuery.docs.isEmpty) {
+        return 'pending'; // No one has accepted yet
+      }
+
+      // Check if any acceptance is confirmed
+      for (final doc in acceptanceQuery.docs) {
+        final data = doc.data();
+        if (data['status'] == 'confirmed') {
+          return 'confirmed';
+        }
+      }
+
+      // If there are acceptances but none confirmed, status is accepted
+      return 'accepted';
+    } catch (e) {
+      return 'pending';
     }
   }
 
@@ -375,18 +416,47 @@ class _HospitalOverviewTabState extends State<HospitalOverviewTab> {
         .collection('blood_requests')
         .where('requesterId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
         .snapshots()
-        .map((snapshot) => snapshot.docs.where((doc) {
-          final data = doc.data();
-          return data['status'] == 'pending';
-        }).length);
+        .asyncMap((snapshot) async {
+          int activeCount = 0;
+          
+          for (final doc in snapshot.docs) {
+            final requestId = doc.id;
+            
+            // Check if this request has any confirmed acceptances
+            final confirmedAcceptances = await FirebaseFirestore.instance
+                .collection('blood_acceptances')
+                .where('requestId', isEqualTo: requestId)
+                .where('status', isEqualTo: 'confirmed')
+                .get();
+            
+            // If no confirmed acceptances, it's still active
+            if (confirmedAcceptances.docs.isEmpty) {
+              activeCount++;
+            }
+          }
+          
+          return activeCount;
+        });
   }
 
-  Stream<int> _getTotalDonorsCount() {
+  Stream<int> _getTotalDonorsWhoAcceptedCount() {
     return FirebaseFirestore.instance
-        .collection('users')
-        .where('userType', isEqualTo: 'donor')
+        .collection('blood_acceptances')
+        .where('hospitalId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+        .where('status', isEqualTo: 'confirmed')
         .snapshots()
-        .map((snapshot) => snapshot.docs.length);
+        .map((snapshot) {
+          // Get unique donor IDs who have confirmed requests from this hospital
+          final uniqueDonorIds = <String>{};
+          for (final doc in snapshot.docs) {
+            final data = doc.data();
+            final donorId = data['donorId'] as String?;
+            if (donorId != null) {
+              uniqueDonorIds.add(donorId);
+            }
+          }
+          return uniqueDonorIds.length;
+        });
   }
 
   Stream<int> _getThisMonthRequestsCount() {
@@ -404,14 +474,12 @@ class _HospitalOverviewTabState extends State<HospitalOverviewTab> {
         }).length);
   }
 
-  Stream<int> _getSuccessfulRequestsCount() {
+  Stream<int> _getAcceptedRequestsCount() {
     return FirebaseFirestore.instance
-        .collection('blood_requests')
-        .where('requesterId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+        .collection('blood_acceptances')
+        .where('hospitalId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+        .where('status', isEqualTo: 'confirmed')
         .snapshots()
-        .map((snapshot) => snapshot.docs.where((doc) {
-          final data = doc.data();
-          return data['status'] == 'completed';
-        }).length);
+        .map((snapshot) => snapshot.docs.length);
   }
 }

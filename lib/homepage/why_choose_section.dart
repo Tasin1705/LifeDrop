@@ -64,15 +64,22 @@ class _WhyChooseSectionState extends State<WhyChooseSection> {
       ),
     ]);
 
-    // Start from a very large index so both forward/backward work "infinitely"
-    _currentPage = _features.length * 1000;
+    // Start from a reasonable middle index for infinite scrolling
+    _currentPage = 50;
     _pageController = PageController(
       viewportFraction: 0.92,
       initialPage: _currentPage,
     );
 
     _timer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (!_pageController.hasClients) return;
+      if (!_pageController.hasClients || !mounted) return;
+      
+      // Reset to middle range if we get too high to prevent overflow
+      if (_currentPage > 10000) {
+        _currentPage = 50;
+        _pageController.jumpToPage(_currentPage);
+      }
+      
       _currentPage++;
       _pageController.animateToPage(
         _currentPage,
@@ -112,20 +119,27 @@ class _WhyChooseSectionState extends State<WhyChooseSection> {
 
               // Infinite carousel
               SizedBox(
-                height: 200,
+                height: 190,
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final cardWidth = constraints.maxWidth * 0.92;
+                    final cardWidth = constraints.maxWidth * 0.90;
                     return PageView.builder(
                       controller: _pageController,
                       padEnds: false,
+                      itemCount: null, // Infinite items
                       itemBuilder: (context, index) {
-                        // Map huge index back to real feature
+                        // Map index back to real feature with safety check
                         final featureIndex = index % _features.length;
-                        return Center(
-                          child: SizedBox(
-                            width: cardWidth,
-                            child: _features[featureIndex],
+                        if (featureIndex >= _features.length) return Container();
+                        
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Center(
+                            child: SizedBox(
+                              width: cardWidth,
+                              height: 170,
+                              child: _features[featureIndex],
+                            ),
                           ),
                         );
                       },
@@ -163,39 +177,53 @@ class FeatureCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Container(
+        height: 170,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
+            // Icon container
             Container(
               decoration: BoxDecoration(
                 color: color.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
-              padding: const EdgeInsets.all(8),
-              child: Icon(icon, size: 32, color: color),
+              padding: const EdgeInsets.all(5),
+              child: Icon(icon, size: 22, color: color),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 6),
+            
+            // Title
             Text(
               title,
               textAlign: TextAlign.center,
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: color,
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              description,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
-                height: 1.3,
+            
+            const SizedBox(height: 4),
+            
+            // Description - increased space and smaller font
+            Expanded(
+              child: Center(
+                child: Text(
+                  description,
+                  textAlign: TextAlign.center,
+                  maxLines: 4,
+                  overflow: TextOverflow.visible,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.black87,
+                    height: 1.1,
+                  ),
+                ),
               ),
             ),
           ],

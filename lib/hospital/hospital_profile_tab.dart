@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../homepage/home_page.dart';
+import '../models/user_model.dart';
 
 class HospitalProfileTab extends StatefulWidget {
   const HospitalProfileTab({super.key});
@@ -12,16 +12,15 @@ class HospitalProfileTab extends StatefulWidget {
 
 class _HospitalProfileTabState extends State<HospitalProfileTab> {
   final _formKey = GlobalKey<FormState>();
-  final _hospitalNameController = TextEditingController();
+  final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _stateController = TextEditingController();
   final _licenseNumberController = TextEditingController();
   
   bool _isLoading = false;
   bool _isEditing = false;
+  UserModel? _currentUser;
 
   @override
   void initState() {
@@ -34,20 +33,19 @@ class _HospitalProfileTabState extends State<HospitalProfileTab> {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         final doc = await FirebaseFirestore.instance
-            .collection('hospitals')
+            .collection('users')
             .doc(user.uid)
             .get();
         
         if (doc.exists) {
-          final data = doc.data()!;
+          final userData = UserModel.fromMap(doc.data()!);
           setState(() {
-            _hospitalNameController.text = data['hospitalName'] ?? '';
-            _emailController.text = data['email'] ?? '';
-            _phoneController.text = data['phone'] ?? '';
-            _addressController.text = data['address'] ?? '';
-            _cityController.text = data['city'] ?? '';
-            _stateController.text = data['state'] ?? '';
-            _licenseNumberController.text = data['licenseNumber'] ?? '';
+            _currentUser = userData;
+            _fullNameController.text = userData.fullName;
+            _emailController.text = userData.email;
+            _phoneController.text = userData.phone;
+            _addressController.text = userData.address;
+            _licenseNumberController.text = userData.licenseNumber ?? '';
           });
         }
       }
@@ -98,9 +96,9 @@ class _HospitalProfileTabState extends State<HospitalProfileTab> {
                   ),
                   const SizedBox(height: 15),
                   Text(
-                    _hospitalNameController.text.isNotEmpty 
-                        ? _hospitalNameController.text 
-                        : 'Hospital Profile',
+                    _fullNameController.text.isNotEmpty 
+                        ? _fullNameController.text 
+                        : 'Hospital/Organization Profile',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 24,
@@ -145,22 +143,6 @@ class _HospitalProfileTabState extends State<HospitalProfileTab> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 15),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _logout,
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Logout'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
 
@@ -187,14 +169,15 @@ class _HospitalProfileTabState extends State<HospitalProfileTab> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Hospital Information',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                        const Expanded(
+                          child: Text(
+                            'Hospital/Organization Information',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
                           ),
                         ),
                         if (_isEditing)
@@ -214,7 +197,7 @@ class _HospitalProfileTabState extends State<HospitalProfileTab> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.green,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             ),
                           ),
                       ],
@@ -222,15 +205,15 @@ class _HospitalProfileTabState extends State<HospitalProfileTab> {
 
                     const SizedBox(height: 20),
 
-                    // Hospital Name
+                    // Hospital Name (Full Name)
                     _buildFormField(
-                      controller: _hospitalNameController,
-                      label: 'Hospital Name',
+                      controller: _fullNameController,
+                      label: 'Hospital/Organization Name',
                       icon: Icons.local_hospital,
                       enabled: _isEditing,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter hospital name';
+                          return 'Please enter hospital/organization name';
                         }
                         return null;
                       },
@@ -254,7 +237,7 @@ class _HospitalProfileTabState extends State<HospitalProfileTab> {
                       controller: _phoneController,
                       label: 'Phone Number',
                       icon: Icons.phone,
-                      enabled: _isEditing,
+                      enabled: false, // Always disabled - phone number should not be editable
                       keyboardType: TextInputType.phone,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -288,7 +271,7 @@ class _HospitalProfileTabState extends State<HospitalProfileTab> {
                       label: 'Address',
                       icon: Icons.location_on,
                       enabled: _isEditing,
-                      maxLines: 2,
+                      maxLines: 3,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter address';
@@ -299,96 +282,17 @@ class _HospitalProfileTabState extends State<HospitalProfileTab> {
 
                     const SizedBox(height: 16),
 
-                    // City and State
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildFormField(
-                            controller: _cityController,
-                            label: 'City',
-                            icon: Icons.location_city,
-                            enabled: _isEditing,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter city';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildFormField(
-                            controller: _stateController,
-                            label: 'State',
-                            icon: Icons.map,
-                            enabled: _isEditing,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter state';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                      ],
+                    // Registration Date (read-only)
+                    _buildFormField(
+                      controller: TextEditingController(
+                        text: _currentUser?.createdAt.toString().split(' ')[0] ?? 'Not available'
+                      ),
+                      label: 'Registration Date',
+                      icon: Icons.calendar_today,
+                      enabled: false,
                     ),
                   ],
                 ),
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            // Quick Stats
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 2,
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Quick Statistics',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildQuickStat(
-                          'Total Requests',
-                          Icons.bloodtype,
-                          Colors.red,
-                          _getTotalRequestsStream(),
-                        ),
-                      ),
-                      const SizedBox(width: 15),
-                      Expanded(
-                        child: _buildQuickStat(
-                          'Active Requests',
-                          Icons.pending,
-                          Colors.orange,
-                          _getActiveRequestsStream(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ),
             ),
           ],
@@ -436,71 +340,6 @@ class _HospitalProfileTabState extends State<HospitalProfileTab> {
     );
   }
 
-  Widget _buildQuickStat(String title, IconData icon, Color color, Stream<int> countStream) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 30),
-          const SizedBox(height: 8),
-          StreamBuilder<int>(
-            stream: countStream,
-            builder: (context, snapshot) {
-              return Text(
-                '${snapshot.data ?? 0}',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: color.withOpacity(0.8),
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Stream<int> _getTotalRequestsStream() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return Stream.value(0);
-    
-    return FirebaseFirestore.instance
-        .collection('blood_requests')
-        .where('requesterId', isEqualTo: user.uid)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.length);
-  }
-
-  Stream<int> _getActiveRequestsStream() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return Stream.value(0);
-    
-    return FirebaseFirestore.instance
-        .collection('blood_requests')
-        .where('requesterId', isEqualTo: user.uid)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.where((doc) {
-          final data = doc.data();
-          return data['status'] == 'pending';
-        }).length);
-  }
-
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -511,22 +350,23 @@ class _HospitalProfileTabState extends State<HospitalProfileTab> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
+        // Create updated user model
+        final updatedUser = _currentUser!.copyWith(
+          fullName: _fullNameController.text,
+          phone: _phoneController.text,
+          address: _addressController.text,
+          licenseNumber: _licenseNumberController.text,
+        );
+
+        // Save to users collection
         await FirebaseFirestore.instance
-            .collection('hospitals')
+            .collection('users')
             .doc(user.uid)
-            .set({
-          'hospitalName': _hospitalNameController.text,
-          'email': _emailController.text,
-          'phone': _phoneController.text,
-          'address': _addressController.text,
-          'city': _cityController.text,
-          'state': _stateController.text,
-          'licenseNumber': _licenseNumberController.text,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+            .update(updatedUser.toMap());
 
         setState(() {
           _isEditing = false;
+          _currentUser = updatedUser;
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -550,41 +390,12 @@ class _HospitalProfileTabState extends State<HospitalProfileTab> {
     }
   }
 
-  void _logout() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const HomePage()),
-                (route) => false,
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Logout', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   void dispose() {
-    _hospitalNameController.dispose();
+    _fullNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
-    _cityController.dispose();
-    _stateController.dispose();
     _licenseNumberController.dispose();
     super.dispose();
   }

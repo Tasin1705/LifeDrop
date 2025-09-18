@@ -9,7 +9,9 @@ import 'firebase_options.dart'; // Generated via `flutterfire configure`
 import 'splash_screen.dart';
 import 'homepage/home_page.dart';
 import 'dashboard/donor_dashboard.dart';
+import 'dashboard/admin_dashboard.dart';
 import 'hospital/hospital.dart';
+import 'hospital/hospital_dashboard.dart';
 import 'auth_wrapper.dart';
 
 void main() async {
@@ -49,6 +51,7 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const HomePage(),
         '/dashboard': (context) => const DonorDashboard(),
         '/hospital_dashboard': (context) => const HospitalDashboard(),
+        '/admin_dashboard': (context) => const AdminDashboard(),
       },
     );
   }

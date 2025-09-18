@@ -7,6 +7,7 @@ import 'hospital_profile_tab.dart';
 import '../homepage/home_page.dart';
 import '../screens/notifications_screen.dart';
 import '../services/notification_service.dart';
+import '../blood_request/blood_request_form.dart';
 
 class HospitalDashboard extends StatefulWidget {
   const HospitalDashboard({super.key});
@@ -112,7 +113,7 @@ class _HospitalDashboardState extends State<HospitalDashboard> {
             ),
           ),
 
-          // Emergency Contact Button
+          // Request Blood Button
           Container(
             padding: const EdgeInsets.all(15),
             child: SizedBox(
@@ -126,13 +127,18 @@ class _HospitalDashboardState extends State<HospitalDashboard> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                icon: const Icon(Icons.emergency),
+                icon: const Icon(Icons.bloodtype),
                 label: const Text(
-                  'Emergency Contact',
+                  'Find Emergency Blood',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 onPressed: () {
-                  _showEmergencyDialog();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const BloodRequestForm(userType: 'hospital'),
+                    ),
+                  );
                 },
               ),
             ),
@@ -239,60 +245,6 @@ class _HospitalDashboardState extends State<HospitalDashboard> {
               ],
             )
           : _pages[_selectedIndex],
-    );
-  }
-
-  void _showEmergencyDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.emergency, color: Colors.red),
-            SizedBox(width: 8),
-            Text('Emergency Contact'),
-          ],
-        ),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'For urgent blood requirements:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            Text('📞 Emergency Hotline: 108'),
-            Text('📞 Blood Bank: 1910'),
-            Text('📞 Red Cross: 1962'),
-            SizedBox(height: 10),
-            Text(
-              'These numbers are available 24/7 for emergency blood requirements.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Implement emergency call functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Calling emergency services...'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Call 108', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
     );
   }
 

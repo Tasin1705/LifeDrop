@@ -21,6 +21,11 @@ class _DonorDashboardState extends State<DonorDashboard> {
   bool _drawerOpen = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  @override
+  void initState() {
+    super.initState();
+  }
+
   final List<Widget> _pages = [
     const OverviewTab(),
     const ScheduleTab(),
@@ -129,7 +134,7 @@ class _DonorDashboardState extends State<DonorDashboard> {
                 ),
                 icon: const Icon(Icons.bloodtype),
                 label: const Text(
-                  'Request Blood',
+                  'Find Emergency Blood',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 onPressed: () {

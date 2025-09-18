@@ -140,20 +140,8 @@ class _BloodRequestFormState extends State<BloodRequestForm> {
                         }
                       }
 
-                      // Send notifications to eligible donors
-                      final notifiedUsers = await NotificationService.sendBloodRequestNotification(
-                        bloodType: bloodGroup!,
-                        units: units!,
-                        contact: contact!,
-                        requiredDate: requiredDate!,
-                        latitude: location!.latitude,
-                        longitude: location!.longitude,
-                        requesterName: requesterName,
-                        requesterType: widget.userType == 'donor' ? 'Donor' : 'Hospital',
-                      );
-
-                      // Store the blood request in Firestore
-                      await FirebaseFirestore.instance.collection('blood_requests').add({
+                      // Store the blood request in Firestore first to get the ID
+                      final requestDocRef = await FirebaseFirestore.instance.collection('blood_requests').add({
                         'bloodType': bloodGroup,
                         'units': units,
                         'contact': contact,
@@ -165,7 +153,44 @@ class _BloodRequestFormState extends State<BloodRequestForm> {
                         'requesterId': user?.uid,
                         'createdAt': Timestamp.now(),
                         'status': 'active',
+                      });
+
+                      final requestId = requestDocRef.id;
+
+                      // Send notifications to eligible donors with request ID
+                      final notifiedUsers = await NotificationService.sendBloodRequestNotification(
+                        bloodType: bloodGroup!,
+                        units: units!,
+                        contact: contact!,
+                        requiredDate: requiredDate!,
+                        latitude: location!.latitude,
+                        longitude: location!.longitude,
+                        requesterName: requesterName,
+                        requesterType: widget.userType == 'donor' ? 'Donor' : 'Hospital',
+                        requestId: requestId,
+                        requesterId: user?.uid,
+                      );
+
+                      // Send notifications to all hospitals except the requester with request ID
+                      print('About to send hospital notifications...');
+                      final notifiedHospitals = await NotificationService.sendBloodRequestNotificationToHospitals(
+                        bloodType: bloodGroup!,
+                        units: units!,
+                        contact: contact!,
+                        requiredDate: requiredDate!,
+                        latitude: location!.latitude,
+                        longitude: location!.longitude,
+                        requesterName: requesterName,
+                        requesterType: widget.userType == 'donor' ? 'Donor' : 'Hospital',
+                        requestId: requestId,
+                        requesterId: user?.uid,
+                      );
+                      print('Hospital notifications completed. Count: ${notifiedHospitals.length}');
+
+                      // Update the blood request with notification results
+                      await requestDocRef.update({
                         'notifiedDonors': notifiedUsers,
+                        'notifiedHospitals': notifiedHospitals,
                       });
 
                       // Close loading dialog
@@ -174,7 +199,7 @@ class _BloodRequestFormState extends State<BloodRequestForm> {
                       // Show success message
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Request submitted! ${notifiedUsers.length} eligible donors notified.'),
+                          content: Text('Request submitted! ${notifiedUsers.length} donors and ${notifiedHospitals.length} hospitals notified.'),
                           backgroundColor: Colors.green,
                         ),
                       );
